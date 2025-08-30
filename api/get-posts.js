@@ -1,9 +1,9 @@
 // This function needs several environment variables set in your Vercel project:
 // 1. GITHUB_TOKEN: A GitHub Personal Access Token with `repo` scope.
-// 2. GITHUB_REPO_OWNER: The owner of the target repository (e.g., your GitHub username).
+// 2. GITHUB_REPO_OWNER: The owner of the target repository.
 // 3. GITHUB_REPO_NAME: The name of the target repository.
-// 4. GITHUB_REPO_PATH: The folder path to fetch files from (e.g., 'posts').
-// 5. GITHUB_REPO_BRANCH: The name of the branch to read from (e.g., 'main' or 'master').
+// 4. GITHUB_REPO_PATH: The folder path to fetch files from.
+// 5. GITHUB_REPO_BRANCH: The name of the branch to read from.
 
 module.exports = async (req, res) => {
     if (req.method !== 'GET') {
@@ -35,38 +35,27 @@ module.exports = async (req, res) => {
         });
 
         if (!githubResponse.ok) {
+            // If the directory doesn't exist, GitHub returns a 404. Treat this as an empty list.
             if (githubResponse.status === 404) {
-                return res.status(200).json({ posts: [], totalPages: 0, currentPage: 1 });
+                return res.status(200).json({ posts: [] });
             }
             const errorData = await githubResponse.json();
-            console.error('GitHub API Error:', errorData.message);
             return res.status(githubResponse.status).json({ error: `Failed to fetch from GitHub: ${errorData.message}` });
         }
 
         const allFiles = await githubResponse.json();
         
-        const sortedPosts = allFiles
+        // Filter out non-markdown files (like subdirectories)
+        const posts = allFiles
             .filter(item => item.type === 'file' && item.name.endsWith('.md'))
-            .sort((a, b) => b.name.localeCompare(a.name));
-
-        const page = parseInt(req.query.page, 10) || 1;
-        const perPage = 20;
-        const totalPosts = sortedPosts.length;
-        const totalPages = Math.ceil(totalPosts / perPage);
-        const start = (page - 1) * perPage;
-        const end = start + perPage;
-        
-        const paginatedPosts = sortedPosts.slice(start, end);
-
-        return res.status(200).json({
-            posts: paginatedPosts.map(post => ({
+            .map(post => ({
                 name: post.name,
                 path: post.path,
                 url: post.html_url
-            })),
-            totalPages,
-            currentPage: page
-        });
+            }));
+
+        // The entire list is returned; sorting and pagination are now handled on the client.
+        return res.status(200).json({ posts });
 
     } catch (error) {
         console.error('An unexpected error occurred:', error);
