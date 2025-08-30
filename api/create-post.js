@@ -52,15 +52,13 @@ async function handler(req, res) {
                 return res.status(400).json({ error: 'Image Path is required when uploading an image.' });
             }
 
-            // Clean the user-provided path (remove leading/trailing slashes)
             const cleanUserPath = userImagePath.replace(/^\/|\/$/g, '');
-
             const base64Data = imageData.split(';base64,').pop();
             const imageExtension = imageName.split('.').pop();
             const uniqueImageName = `${Date.now()}-${slugify(imageName.replace(`.${imageExtension}`, ''))}.${imageExtension}`;
             
-            // This is the full path for the GitHub API call
-            const githubUploadPath = `${GITHUB_REPO_PATH}/${cleanUserPath}/${uniqueImageName}`;
+            // CORRECTED: This path is now absolute from the repo root, ignoring GITHUB_REPO_PATH
+            const githubUploadPath = `${cleanUserPath}/${uniqueImageName}`;
 
             const imageUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${githubUploadPath}`;
 
@@ -82,14 +80,11 @@ async function handler(req, res) {
                 throw new Error(`Failed to upload image: ${imageUploadResult.message}`);
             }
 
-            // This is the path for the shortcode, which should be relative to the site root
             const shortcodePath = `/${cleanUserPath}/${uniqueImageName}`;
-            
-            // Prepend the image shortcode to the post content
             finalContent = `{{< img src="${shortcodePath}" >}}\n\n${content}`;
         }
         
-        // Step 2: Create or update the markdown post file
+        // Step 2: Create or update the markdown post file (This correctly uses GITHUB_REPO_PATH)
         const date = (client_iso_date || new Date().toISOString()).split('T')[0];
         const slug = slugify(title);
         const filename = `${date}-${slug}.md`;
