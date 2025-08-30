@@ -1,20 +1,19 @@
-// This function needs several environment variables set in your Vercel project:
-// ... (same as before)
+const { Buffer } = require('buffer');
 
-function toBase64(str) {
-    return Buffer.from(str).toString('base64');
-}
-
+// Helper function to create a URL-friendly slug
 function slugify(text) {
-    if (!text) return '';
-    return text.toString().toLowerCase().trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-')
-        .substring(0, 50);
+    if (!text) return 'untitled';
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with -
+        .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+        .replace(/\-\-+/g, '-') // Replace multiple - with single -
+        .substring(0, 50); // Truncate to 50 chars
 }
 
-module.exports = async (req, res) => {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', 'POST');
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -30,11 +29,11 @@ module.exports = async (req, res) => {
     } = process.env;
 
     if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME || !GITHUB_REPO_PATH || !POST_PASSWORD || !GITHUB_REPO_BRANCH) {
-        console.error("Missing one or more required environment variables.");
+        console.error("Server configuration error: Missing one or more required environment variables.");
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    const { title, content, password, client_iso_date, sha, path } = req.body;
+    const { title, content, password, client_iso_date, sha, path, imageData, imageName, imagePath: userImagePath } = req.body;
 
     if (!content || !password) {
         return res.status(400).json({ error: 'Content and password are required.' });
@@ -45,69 +44,96 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const isUpdate = sha && path;
-        const postDate = client_iso_date ? new Date(client_iso_date) : new Date();
-        const dateForFilename = postDate.toISOString().split('T')[0];
+        let finalContent = content;
         
-        let finalTitle = title;
-        let slug;
+        // Step 1: Handle image upload if an image is provided
+        if (imageData && imageName) {
+            if (!userImagePath) {
+                return res.status(400).json({ error: 'Image Path is required when uploading an image.' });
+            }
 
-        if (!finalTitle) {
-            // Generate title/slug from content if title is missing
-            finalTitle = content.split(/\s+/).slice(0, 5).join(' ') + '...';
-            slug = slugify(finalTitle) || Date.now().toString();
-        } else {
-            slug = slugify(finalTitle);
-        }
+            // Clean the user-provided path (remove leading/trailing slashes)
+            const cleanUserPath = userImagePath.replace(/^\/|\/$/g, '');
 
-        const filename = `${dateForFilename}-${slug}.md`;
-        const filePath = isUpdate ? path : `${GITHUB_REPO_PATH}/${filename}`;
-        
-        const fileContent = `---\ntitle: "${finalTitle}"\ndate: "${postDate.toISOString()}"\n---\n\n${content}`;
-        const encodedContent = toBase64(fileContent);
-
-        const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
-
-        const commitMessage = isUpdate ?
-            `feat: update post '${finalTitle}'` :
-            `feat: add new post '${finalTitle}'`;
+            const base64Data = imageData.split(';base64,').pop();
+            const imageExtension = imageName.split('.').pop();
+            const uniqueImageName = `${Date.now()}-${slugify(imageName.replace(`.${imageExtension}`, ''))}.${imageExtension}`;
             
-        const body = {
-            message: commitMessage,
-            content: encodedContent,
-            branch: GITHUB_REPO_BRANCH,
-            committer: { name: 'Vercel Post Bot', email: 'bot@vercel.com' },
-        };
+            // This is the full path for the GitHub API call
+            const githubUploadPath = `${GITHUB_REPO_PATH}/${cleanUserPath}/${uniqueImageName}`;
 
-        if (isUpdate) {
-            body.sha = sha;
+            const imageUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${githubUploadPath}`;
+
+            const imageUploadResponse = await fetch(imageUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                },
+                body: JSON.stringify({
+                    message: `feat: add image ${uniqueImageName}`,
+                    content: base64Data,
+                    branch: GITHUB_REPO_BRANCH,
+                }),
+            });
+
+            const imageUploadResult = await imageUploadResponse.json();
+            if (!imageUploadResponse.ok) {
+                throw new Error(`Failed to upload image: ${imageUploadResult.message}`);
+            }
+
+            // This is the path for the shortcode, which should be relative to the site root
+            const shortcodePath = `/${cleanUserPath}/${uniqueImageName}`;
+            
+            // Prepend the image shortcode to the post content
+            finalContent = `{{< img src="${shortcodePath}" >}}\n\n${content}`;
+        }
+        
+        // Step 2: Create or update the markdown post file
+        const date = (client_iso_date || new Date().toISOString()).split('T')[0];
+        const slug = slugify(title);
+        const filename = `${date}-${slug}.md`;
+        let filePath = path;
+        
+        if (!filePath) {
+             filePath = `${GITHUB_REPO_PATH}/${filename}`;
         }
 
-        const githubResponse = await fetch(url, {
+        const postContent = `---\ntitle: "${title || ''}"\ndate: "${new Date(client_iso_date).toISOString()}"\n---\n\n${finalContent}`;
+        const encodedContent = Buffer.from(postContent).toString('base64');
+
+        const postUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
+
+        const postResponse = await fetch(postUrl, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify({
+                message: sha ? `feat: update post '${title || 'untitled'}'` : `feat: add new post '${title || 'untitled'}'`,
+                content: encodedContent,
+                branch: GITHUB_REPO_BRANCH,
+                sha: sha,
+            }),
         });
 
-        const githubData = await githubResponse.json();
-
-        if (!githubResponse.ok) {
-            return res.status(githubResponse.status).json({ error: githubData.message || 'Failed to commit file to GitHub.' });
+        const postResult = await postResponse.json();
+        if (!postResponse.ok) {
+            throw new Error(postResult.message || 'Failed to create or update post on GitHub.');
         }
         
-        const responseMessage = isUpdate ? 'File updated successfully!' : 'File created successfully!';
-        return res.status(isUpdate ? 200 : 201).json({ 
-            message: responseMessage,
-            path: githubData.content.html_url 
+        const message = sha ? 'File updated successfully!' : 'File created successfully!';
+        return res.status(sha ? 200 : 201).json({ 
+            message: message,
+            path: postResult.content.html_url 
         });
 
     } catch (error) {
         console.error('An unexpected error occurred:', error);
-        return res.status(500).json({ error: 'An internal server error occurred.' });
+        return res.status(500).json({ error: error.message || 'An internal server error occurred.' });
     }
-};
+}
+
+module.exports = handler;
 

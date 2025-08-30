@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post Dashboard</title>
     <style>
         /* --- CSS Reset & Base Styles --- */
@@ -50,7 +50,7 @@
         /* --- Form Elements --- */
         .form-header { text-align: center; margin-bottom: 2.5rem; }
         .form-group { margin-bottom: 2rem; }
-        input[type="text"], input[type="password"], textarea, input[type="search"] {
+        input[type="text"], input[type="password"], textarea, input[type="search"], input[type="file"] {
             width: 100%;
             padding: 0.75rem 1rem;
             background-color: #1f2937; /* bg-gray-800 */
@@ -60,7 +60,10 @@
             color: #d1d5db;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, input[type="search"]:focus {
+        input[type="file"] {
+             padding: 0.5rem; /* Specific padding for file input */
+        }
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, input[type="search"]:focus, input[type="file"]:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px #3b82f6;
@@ -69,6 +72,18 @@
         .checkbox-group { display: flex; align-items: center; margin-top: 1rem; }
         .checkbox-group input { height: 1.25rem; width: 1.25rem; }
         .checkbox-group label { margin-left: 0.75rem; font-size: 1rem; color: #9ca3af; cursor: pointer; }
+        
+        /* Image Preview */
+        .image-preview-container {
+            margin-top: 1rem;
+            display: none; /* Hidden by default */
+        }
+        #image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 0.5rem;
+            border: 1px solid #374151;
+        }
 
         /* --- Buttons --- */
         button {
@@ -161,6 +176,17 @@
                     <label for="content">Content (Markdown)</label>
                     <textarea id="content" required placeholder="Write your content here..."></textarea>
                 </div>
+                 <div class="form-group">
+                    <label for="image">Image (Optional)</label>
+                    <input type="file" id="image-input" accept="image/*">
+                    <div class="image-preview-container" id="image-preview-container">
+                        <img id="image-preview" src="#" alt="Image preview">
+                    </div>
+                </div>
+                 <div class="form-group">
+                    <label for="image-path-input">Image Upload Path</label>
+                    <input type="text" id="image-path-input" placeholder="/assets/img">
+                </div>
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" required placeholder="Enter the secret password">
@@ -217,6 +243,10 @@
         const savePasswordCheckbox = document.getElementById('save-password');
         const formTitle = document.getElementById('form-title');
         const cancelEditButton = document.getElementById('cancel-edit-button');
+        const imageInput = document.getElementById('image-input');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const imagePathInput = document.getElementById('image-path-input');
 
         const postsList = document.getElementById('posts-list');
         const postsLoader = document.getElementById('posts-loader');
@@ -307,7 +337,8 @@
                 formTitle.textContent = 'Editing Post';
                 buttonText.textContent = 'Update Post';
                 cancelEditButton.classList.remove('hidden');
-                messageBox.textContent = '';
+                messageBox.textContent = 'Note: To change an image, please select a new one.';
+                messageBox.className = 'message-box message-info';
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
                 messageBox.className = 'message-box message-error';
@@ -320,7 +351,9 @@
             formTitle.textContent = 'Post Something';
             buttonText.textContent = 'Push to GitHub';
             cancelEditButton.classList.add('hidden');
+            imagePreviewContainer.style.display = 'none';
             loadPassword();
+            loadImagePath(); // Reload saved image path
         }
         
         function savePassword() {
@@ -339,22 +372,65 @@
             }
         }
 
+        function saveImagePath() {
+            localStorage.setItem('post_dashboard_image_path', imagePathInput.value);
+        }
+
+        function loadImagePath() {
+            const savedPath = localStorage.getItem('post_dashboard_image_path');
+            if (savedPath) {
+                imagePathInput.value = savedPath;
+            } else {
+                imagePathInput.value = '/assets/img'; // Default value
+            }
+        }
+        
+        // Function to read a file as a Base64 string
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
         // --- Event Listeners ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             savePassword();
+            saveImagePath(); // Save path on submit
             messageBox.textContent = '';
             submitButton.disabled = true;
             buttonText.textContent = editState.sha ? 'Updating...' : 'Publishing...';
             loader.classList.remove('hidden');
 
+            let imageData = null;
+            let imageName = null;
+
+            if (imageInput.files[0]) {
+                 try {
+                    imageData = await getBase64(imageInput.files[0]);
+                    imageName = imageInput.files[0].name;
+                } catch (error) {
+                    messageBox.textContent = `Error: Could not read image file.`;
+                    messageBox.className = 'message-box message-error';
+                    submitButton.disabled = false;
+                    loader.classList.add('hidden');
+                    return;
+                }
+            }
+            
             const data = {
                 title: titleInput.value,
                 content: contentInput.value,
                 password: passwordInput.value,
                 client_iso_date: new Date().toISOString(),
                 sha: editState.sha,
-                path: editState.path
+                path: editState.path,
+                imageData,
+                imageName,
+                imagePath: imagePathInput.value
             };
 
             try {
@@ -377,8 +453,20 @@
             } finally {
                 submitButton.disabled = false;
                 loader.classList.add('hidden');
-                 // Reset button text after operation
                 buttonText.textContent = editState.sha ? 'Update Post' : 'Push to GitHub';
+            }
+        });
+        
+        imageInput.addEventListener('change', () => {
+            if (imageInput.files && imageInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.setAttribute('src', e.target.result);
+                    imagePreviewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(imageInput.files[0]);
+            } else {
+                imagePreviewContainer.style.display = 'none';
             }
         });
         
@@ -398,6 +486,7 @@
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             loadPassword();
+            loadImagePath();
             fetchPosts();
         });
     </script>
