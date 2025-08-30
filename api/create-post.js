@@ -33,7 +33,6 @@ async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    // This function no longer handles image data.
     const { title, content, password, client_iso_date, sha, path } = req.body;
 
     if (!content || !password) {
@@ -45,32 +44,50 @@ async function handler(req, res) {
     }
 
     try {
-        const date = (client_iso_date || new Date().toISOString()).split('T')[0];
-        const slug = slugify(title);
-        const filename = `${date}-${slug}.md`;
         let filePath = path;
-        
-        if (!filePath) {
-             filePath = `${GITHUB_REPO_PATH}/${filename}`;
+        let fileSha = sha;
+
+        // If no SHA is provided, either create new file OR fetch it if path exists
+        if (!fileSha) {
+            if (filePath) {
+                // Try to fetch existing file to get sha
+                const checkUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}?ref=${GITHUB_REPO_BRANCH}`;
+                const checkRes = await fetch(checkUrl, {
+                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+
+                if (checkRes.ok) {
+                    const checkData = await checkRes.json();
+                    fileSha = checkData.sha;
+                }
+            }
+
+            // If still no sha after fetch, it’s a new file → generate filename
+            if (!fileSha) {
+                const date = (client_iso_date || new Date().toISOString()).split('T')[0];
+                const slug = slugify(title);
+                const filename = `${date}-${slug}.md`;
+                filePath = `${GITHUB_REPO_PATH}/${filename}`;
+            }
         }
 
-        const postContent = `---\ntitle: "${title || ''}"\ndate: "${new Date(client_iso_date).toISOString()}"\n---\n\n${content}`;
+        const postContent = `---\ntitle: "${title || ''}"\ndate: "${new Date(client_iso_date || Date.now()).toISOString()}"\n---\n\n${content}`;
         const encodedContent = Buffer.from(postContent).toString('base64');
         const postUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
 
         const payload = {
-            message: sha ? `feat: update post '${title || 'untitled'}'` : `feat: add new post '${title || 'untitled'}'`,
+            message: fileSha ? `feat: update post '${title || 'untitled'}'` : `feat: add new post '${title || 'untitled'}'`,
             content: encodedContent,
             branch: GITHUB_REPO_BRANCH,
         };
 
-        if (sha) {
-            payload.sha = sha;
+        if (fileSha) {
+            payload.sha = fileSha;
         }
 
         const postResponse = await fetch(postUrl, {
             method: 'PUT',
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json', },
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' },
             body: JSON.stringify(payload),
         });
 
@@ -83,11 +100,11 @@ async function handler(req, res) {
         if (!postResponse.ok) {
             throw new Error(postResult.message || 'Failed to create or update post on GitHub.');
         }
-        
-        const message = sha ? 'File updated successfully!' : 'File created successfully!';
-        return res.status(sha ? 200 : 201).json({ 
+
+        const message = fileSha ? 'File updated successfully!' : 'File created successfully!';
+        return res.status(fileSha ? 200 : 201).json({
             message: message,
-            path: postResult.content.html_url 
+            path: postResult.content.html_url
         });
 
     } catch (error) {
@@ -97,4 +114,3 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
-
