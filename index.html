@@ -10,81 +10,142 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        .lds-ring {
-            display: inline-block;
-            position: relative;
-            width: 20px;
-            height: 20px;
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
         }
-        .lds-ring div {
-            box-sizing: border-box;
-            display: block;
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            margin: 2px;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-            border-color: #fff transparent transparent transparent;
-        }
-        .lds-ring div:nth-child(1) { animation-delay: -0.45s; }
-        .lds-ring div:nth-child(2) { animation-delay: -0.3s; }
-        .lds-ring div:nth-child(3) { animation-delay: -0.15s; }
-        @keyframes lds-ring {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen">
-
-    <div class="w-full max-w-2xl mx-auto p-4 sm:p-6 md:p-8">
-        <div class="bg-white rounded-2xl shadow-lg p-8">
-            <h1 class="text-3xl font-bold text-center text-gray-900 mb-2">Post Something Today</h1>
-            <p class="text-center text-gray-500 mb-8">Create a new markdown file and push it directly to your GitHub repository.</p>
-
+<body class="bg-gray-100 py-12">
+    <div class="w-full max-w-2xl mx-auto space-y-8">
+        <!-- Posting Form Card -->
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <div class="mb-8 text-center">
+                <h1 class="text-3xl font-bold text-gray-800">Post Something Today</h1>
+                <p class="text-gray-500 mt-2">Create a new markdown file and push it to your GitHub repository.</p>
+            </div>
             <form id="post-form">
                 <div class="space-y-6">
                     <div>
-                        <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-                        <input type="text" id="title" name="title" required class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" placeholder="Your Post Title">
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" id="title" name="title" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                               placeholder="Your post title">
                     </div>
-
                     <div>
-                        <label for="content" class="block text-sm font-medium text-gray-700">Content (Markdown)</label>
-                        <textarea id="content" name="content" rows="10" required class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" placeholder="Write your thoughts here..."></textarea>
+                        <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Content (Markdown)</label>
+                        <textarea id="content" name="content" rows="10" required
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                                  placeholder="Write your content here..."></textarea>
                     </div>
-
                     <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                        <input type="password" id="password" name="password" required class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" placeholder="••••••••">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" id="password" name="password" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                               placeholder="Enter the secret password">
                     </div>
                 </div>
-
                 <div class="mt-8">
-                    <button type="submit" id="submit-button" class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-150 ease-in-out">
+                    <button type="submit" id="submit-button"
+                            class="w-full flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out disabled:bg-blue-400">
                         <span id="button-text">Push to GitHub</span>
-                        <div id="loader" class="hidden lds-ring"><div></div><div></div><div></div><div></div></div>
+                        <div id="loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-5 w-5 ml-3 hidden"></div>
                     </button>
                 </div>
             </form>
-
             <div id="message-box" class="mt-6 text-center text-sm"></div>
+        </div>
+
+        <!-- Previous Posts Card -->
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Previous Posts</h2>
+            <div id="posts-container">
+                <ul id="posts-list" class="space-y-3"></ul>
+                <div id="posts-loader" class="text-center py-4">
+                    <p>Loading posts...</p>
+                </div>
+                <div id="posts-error" class="text-center py-4 text-red-600"></div>
+            </div>
+            <div id="pagination-controls" class="mt-6 flex justify-between items-center">
+                <button id="prev-button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                <span id="page-indicator" class="text-sm text-gray-600"></span>
+                <button id="next-button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // State for form
         const form = document.getElementById('post-form');
         const submitButton = document.getElementById('submit-button');
         const buttonText = document.getElementById('button-text');
         const loader = document.getElementById('loader');
         const messageBox = document.getElementById('message-box');
 
+        // State for posts list
+        const postsList = document.getElementById('posts-list');
+        const postsLoader = document.getElementById('posts-loader');
+        const postsError = document.getElementById('posts-error');
+        const paginationControls = document.getElementById('pagination-controls');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const pageIndicator = document.getElementById('page-indicator');
+        
+        let currentPage = 1;
+        let totalPages = 1;
+
+        // Fetch and display posts
+        async function fetchPosts(page = 1) {
+            postsLoader.style.display = 'block';
+            postsError.textContent = '';
+            postsList.innerHTML = '';
+            paginationControls.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/get-posts?page=${page}`);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to fetch posts.');
+                }
+                
+                if (result.posts.length === 0) {
+                     postsLoader.textContent = 'No posts found.';
+                     return;
+                }
+
+                postsList.innerHTML = result.posts.map(post => `
+                    <li class="border-b border-gray-200 pb-3">
+                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                            ${post.name}
+                        </a>
+                    </li>
+                `).join('');
+                
+                currentPage = result.currentPage;
+                totalPages = result.totalPages;
+
+                pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+                prevButton.disabled = currentPage <= 1;
+                nextButton.disabled = currentPage >= totalPages;
+                
+                paginationControls.style.display = totalPages > 1 ? 'flex' : 'none';
+
+            } catch (error) {
+                postsError.textContent = `Error: ${error.message}`;
+            } finally {
+                postsLoader.style.display = 'none';
+            }
+        }
+        
+        // Handle form submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            // Reset UI states
             messageBox.textContent = '';
             messageBox.className = 'mt-6 text-center text-sm';
             submitButton.disabled = true;
@@ -95,39 +156,64 @@
             const data = {
                 title: formData.get('title'),
                 content: formData.get('content'),
-                password: formData.get('password')
+                password: formData.get('password'),
+                client_iso_date: new Date().toISOString()
             };
 
             try {
                 const response = await fetch('/api/create-post', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
 
-                const result = await response.json();
+                const responseText = await response.text();
+                let result;
+
+                try {
+                    result = JSON.parse(responseText);
+                } catch (err) {
+                    console.error("Server Response (not JSON):", responseText);
+                    throw new Error(`Server returned an invalid response.`);
+                }
 
                 if (!response.ok) {
                     throw new Error(result.error || 'An unknown error occurred.');
                 }
 
-                messageBox.textContent = `Success! File created at: ${result.path}`;
+                messageBox.textContent = `Success! File created.`;
                 messageBox.classList.add('text-green-600');
                 form.reset();
+                fetchPosts(1); // Refresh the list to show the new post
 
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
                 messageBox.classList.add('text-red-600');
-
             } finally {
-                // Restore button state
                 submitButton.disabled = false;
                 buttonText.textContent = 'Push to GitHub';
                 loader.classList.add('hidden');
             }
         });
+
+        // Pagination event listeners
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                fetchPosts(currentPage - 1);
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                fetchPosts(currentPage + 1);
+            }
+        });
+
+        // Initial fetch of posts when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPosts();
+        });
     </script>
 </body>
 </html>
+
