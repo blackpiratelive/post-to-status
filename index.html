@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>Post Dashboard</title>
     <style>
         /* --- CSS Reset & Base Styles --- */
@@ -46,6 +46,7 @@
         h2 { font-size: 2.25rem; font-weight: 700; color: #ffffff; margin-bottom: 2rem; }
         p { font-size: 1.125rem; color: #9ca3af; margin-top: 0.75rem; }
         label { display: block; font-size: 1.125rem; font-weight: 500; color: #9ca3af; margin-bottom: 0.5rem; }
+        .label-note { font-size: 0.875rem; color: #6b7280; margin-top: -0.25rem; margin-bottom: 0.5rem; }
 
         /* --- Form Elements --- */
         .form-header { text-align: center; margin-bottom: 2.5rem; }
@@ -184,8 +185,13 @@
                     </div>
                 </div>
                  <div class="form-group">
-                    <label for="image-path-input">Image Upload Path</label>
+                    <label for="image-path-input">Image Upload Path (in Repo)</label>
                     <input type="text" id="image-path-input" placeholder="/assets/img">
+                </div>
+                <div class="form-group">
+                    <label for="image-shortcode-input">Image Shortcode Template</label>
+                    <div class="label-note">Use IMAGE_NAME as a placeholder for the filename.</div>
+                    <input type="text" id="image-shortcode-input" placeholder="{{< img src=`/img/IMAGE_NAME` >}}">
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -247,6 +253,7 @@
         const imagePreviewContainer = document.getElementById('image-preview-container');
         const imagePreview = document.getElementById('image-preview');
         const imagePathInput = document.getElementById('image-path-input');
+        const imageShortcodeInput = document.getElementById('image-shortcode-input');
 
         const postsList = document.getElementById('posts-list');
         const postsLoader = document.getElementById('posts-loader');
@@ -353,7 +360,8 @@
             cancelEditButton.classList.add('hidden');
             imagePreviewContainer.style.display = 'none';
             loadPassword();
-            loadImagePath(); // Reload saved image path
+            loadImagePath();
+            loadShortcode();
         }
         
         function savePassword() {
@@ -378,14 +386,18 @@
 
         function loadImagePath() {
             const savedPath = localStorage.getItem('post_dashboard_image_path');
-            if (savedPath) {
-                imagePathInput.value = savedPath;
-            } else {
-                imagePathInput.value = '/assets/img'; // Default value
-            }
+            imagePathInput.value = savedPath || '/assets/img';
         }
         
-        // Function to read a file as a Base64 string
+        function saveShortcode() {
+            localStorage.setItem('post_dashboard_shortcode', imageShortcodeInput.value);
+        }
+
+        function loadShortcode() {
+            const savedShortcode = localStorage.getItem('post_dashboard_shortcode');
+            imageShortcodeInput.value = savedShortcode || '{{< img src="/img/IMAGE_NAME" >}}';
+        }
+        
         function getBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -399,7 +411,8 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             savePassword();
-            saveImagePath(); // Save path on submit
+            saveImagePath();
+            saveShortcode();
             messageBox.textContent = '';
             submitButton.disabled = true;
             buttonText.textContent = editState.sha ? 'Updating...' : 'Publishing...';
@@ -430,7 +443,8 @@
                 path: editState.path,
                 imageData,
                 imageName,
-                imagePath: imagePathInput.value
+                imagePath: imagePathInput.value,
+                imageShortcodeTemplate: imageShortcodeInput.value
             };
 
             try {
@@ -487,6 +501,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadPassword();
             loadImagePath();
+            loadShortcode();
             fetchPosts();
         });
     </script>

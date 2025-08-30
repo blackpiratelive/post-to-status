@@ -33,7 +33,7 @@ async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    const { title, content, password, client_iso_date, sha, path, imageData, imageName, imagePath: userImagePath } = req.body;
+    const { title, content, password, client_iso_date, sha, path, imageData, imageName, imagePath: userImagePath, imageShortcodeTemplate } = req.body;
 
     if (!content || !password) {
         return res.status(400).json({ error: 'Content and password are required.' });
@@ -48,8 +48,8 @@ async function handler(req, res) {
         
         // Step 1: Handle image upload if an image is provided
         if (imageData && imageName) {
-            if (!userImagePath) {
-                return res.status(400).json({ error: 'Image Path is required when uploading an image.' });
+            if (!userImagePath || !imageShortcodeTemplate) {
+                return res.status(400).json({ error: 'Image Path and Shortcode Template are required when uploading an image.' });
             }
 
             const cleanUserPath = userImagePath.replace(/^\/|\/$/g, '');
@@ -57,7 +57,6 @@ async function handler(req, res) {
             const imageExtension = imageName.split('.').pop();
             const uniqueImageName = `${Date.now()}-${slugify(imageName.replace(`.${imageExtension}`, ''))}.${imageExtension}`;
             
-            // CORRECTED: This path is now absolute from the repo root, ignoring GITHUB_REPO_PATH
             const githubUploadPath = `${cleanUserPath}/${uniqueImageName}`;
 
             const imageUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${githubUploadPath}`;
@@ -80,11 +79,13 @@ async function handler(req, res) {
                 throw new Error(`Failed to upload image: ${imageUploadResult.message}`);
             }
 
-            const shortcodePath = `/${cleanUserPath}/${uniqueImageName}`;
-            finalContent = `{{< img src="${shortcodePath}" >}}\n\n${content}`;
+            // Replace the placeholder in the user-provided shortcode template
+            const finalShortcode = imageShortcodeTemplate.replace('IMAGE_NAME', uniqueImageName);
+            
+            finalContent = `${finalShortcode}\n\n${content}`;
         }
         
-        // Step 2: Create or update the markdown post file (This correctly uses GITHUB_REPO_PATH)
+        // Step 2: Create or update the markdown post file
         const date = (client_iso_date || new Date().toISOString()).split('T')[0];
         const slug = slugify(title);
         const filename = `${date}-${slug}.md`;
