@@ -33,7 +33,6 @@ async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    // This function no longer handles image data directly.
     const { title, content, password, client_iso_date, sha, path } = req.body;
 
     if (!content || !password) {
@@ -45,13 +44,18 @@ async function handler(req, res) {
     }
 
     try {
-        const date = (client_iso_date || new Date().toISOString()).split('T')[0];
-        const slug = slugify(title);
-        const filename = `${date}-${slug}.md`;
         let filePath = path;
         
+        // **THE BUG FIX IS HERE**
+        // If 'path' is not provided, this is a new post.
+        // We generate a new filename and make it unique to prevent collisions.
         if (!filePath) {
-             filePath = `${GITHUB_REPO_PATH}/${filename}`;
+            const date = (client_iso_date || new Date().toISOString()).split('T')[0];
+            const slug = slugify(title);
+            // Add a unique suffix based on the current timestamp to prevent filename collisions
+            const unique_suffix = Date.now().toString().slice(-6); 
+            const filename = `${date}-${slug}-${unique_suffix}.md`;
+            filePath = `${GITHUB_REPO_PATH}/${filename}`;
         }
 
         const postContent = `---\ntitle: "${title || ''}"\ndate: "${new Date(client_iso_date).toISOString()}"\n---\n\n${content}`;
@@ -64,6 +68,7 @@ async function handler(req, res) {
             branch: GITHUB_REPO_BRANCH,
         };
 
+        // Only add the 'sha' key if we are updating an existing file.
         if (sha) {
             payload.sha = sha;
         }
@@ -76,11 +81,14 @@ async function handler(req, res) {
 
         const postResult = await postResponse.json();
 
-        if (postResponse.status === 409) {
-            throw new Error("Conflict: The post has been changed on GitHub since you started editing. Please cancel, refresh the post list, and try again.");
-        }
-
+        // Handle specific GitHub API errors for better user feedback
         if (!postResponse.ok) {
+            if (postResponse.status === 422 && postResult.message.includes("sha wasn't supplied")) {
+                 throw new Error("Filename conflict. The post title may be too similar to an existing post. Please try a different title.");
+            }
+            if (postResponse.status === 409) {
+                 throw new Error("Conflict: This post has been updated on GitHub since you started editing. Please cancel and refresh.");
+            }
             throw new Error(postResult.message || 'Failed to create or update post on GitHub.');
         }
         
