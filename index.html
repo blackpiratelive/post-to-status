@@ -2,78 +2,210 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>Post Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .loader { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
+        /* --- CSS Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body { 
+            background-color: #111827; 
+            color: #d1d5db;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding: 3rem 1rem;
+        }
+        @media (min-width: 768px) {
+            body { padding: 5rem 1rem; }
+        }
+
+        /* --- Layout --- */
+        .container {
+            width: 100%;
+            max-width: 42rem; /* max-w-2xl */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .section {
+            margin-bottom: 4rem;
+        }
+        .section:last-child {
+            margin-bottom: 0;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #1f2937; /* border-gray-800 */
+        }
+
+        /* --- Typography --- */
+        h1 { font-size: 3rem; font-weight: 700; color: #ffffff; }
+        h2 { font-size: 2.25rem; font-weight: 700; color: #ffffff; margin-bottom: 2rem; }
+        p { font-size: 1.125rem; color: #9ca3af; margin-top: 0.75rem; }
+        label { display: block; font-size: 1.125rem; font-weight: 500; color: #9ca3af; margin-bottom: 0.5rem; }
+
+        /* --- Form Elements --- */
+        .form-header { text-align: center; margin-bottom: 2.5rem; }
+        .form-group { margin-bottom: 2rem; }
+        input[type="text"], input[type="password"], textarea, input[type="search"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: #1f2937; /* bg-gray-800 */
+            border: 1px solid #374151; /* border-gray-700 */
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            color: #d1d5db;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, input[type="search"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        textarea { resize: vertical; min-height: 200px; }
+        .checkbox-group { display: flex; align-items: center; margin-top: 1rem; }
+        .checkbox-group input { height: 1.25rem; width: 1.25rem; }
+        .checkbox-group label { margin-left: 0.75rem; font-size: 1rem; color: #9ca3af; cursor: pointer; }
+
+        /* --- Buttons --- */
+        button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary {
+            width: 100%;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            font-size: 1.125rem;
+            background-color: #2563eb; /* bg-blue-600 */
+            color: #ffffff;
+        }
+        .btn-primary:hover:not(:disabled) { background-color: #1d4ed8; }
+        .btn-secondary {
+            width: 100%;
+            background-color: #374151; /* bg-gray-700 */
+            color: #d1d5db;
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+        .btn-edit {
+             margin-left: 1rem;
+             flex-shrink: 0;
+             padding: 0.5rem 1rem;
+             font-size: 0.875rem;
+             background-color: #374151; /* bg-gray-700 */
+             color: #d1d5db;
+        }
+        .btn-edit:hover { background-color: #4b5563; }
+
+        /* --- Utilities & Components --- */
+        .controls-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        @media (min-width: 640px) {
+            .controls-container { flex-direction: row; }
+        }
+        .full-width { width: 100%; }
+        .flex-grow { flex-grow: 1; }
+        
+        .posts-list { list-style: none; space-y: 1.25rem; }
+        .post-item { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid #1f2937; }
+        .post-item:last-child { border-bottom: none; }
+        .post-link { font-size: 1.125rem; color: #60a5fa; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .post-link:hover { text-decoration: underline; }
+
+        .pagination-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; }
+        
+        .message-box { margin-top: 2rem; text-align: center; font-size: 1rem; }
+        .message-success { color: #4ade80; }
+        .message-error { color: #f87171; }
+        .message-info { color: #9ca3af; }
+
+        .loader { 
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 4px solid #4b5563;
+            border-top-color: #3b82f6; 
+            border-radius: 50%;
+            animation: spin 1s linear infinite; 
+            margin-left: 0.75rem;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200 py-12 antialiased">
-    <div class="w-full max-w-2xl mx-auto space-y-8 px-4">
-        <!-- Posting Form Card -->
-        <div id="form-card" class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-8">
-            <div class="mb-8 text-center">
-                <h1 id="form-title" class="text-3xl font-bold text-white">Post Something Today</h1>
-                <p class="text-gray-400 mt-2">Create or update a markdown file in your GitHub repository.</p>
+<body>
+    <div class="container">
+        <!-- Posting Form Section -->
+        <div id="form-section" class="section">
+            <div class="form-header">
+                <h1 id="form-title">Post Something</h1>
+                <p>Create or update a post in your GitHub repository.</p>
             </div>
             <form id="post-form">
-                <div class="space-y-6">
-                    <div>
-                        <label for="title" class="block text-sm font-medium text-gray-300 mb-1">Title (Optional)</label>
-                        <input type="text" id="title" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Your post title">
-                    </div>
-                    <div>
-                        <label for="content" class="block text-sm font-medium text-gray-300 mb-1">Content (Markdown)</label>
-                        <textarea id="content" rows="10" required class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Write your content here..."></textarea>
-                    </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
-                        <input type="password" id="password" required class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Enter the secret password">
-                        <div class="mt-2 flex items-center">
-                            <input type="checkbox" id="save-password" class="h-4 w-4 rounded bg-gray-600 border-gray-500 text-blue-600 focus:ring-blue-500">
-                            <label for="save-password" class="ml-2 block text-sm text-gray-300">Save Password</label>
-                        </div>
+                <div class="form-group">
+                    <label for="title">Title (Optional)</label>
+                    <input type="text" id="title" placeholder="Your post title">
+                </div>
+                <div class="form-group">
+                    <label for="content">Content (Markdown)</label>
+                    <textarea id="content" required placeholder="Write your content here..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="Enter the secret password">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="save-password">
+                        <label for="save-password">Save Password</label>
                     </div>
                 </div>
-                <div class="mt-8 space-y-3">
-                    <button type="submit" id="submit-button" class="w-full flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800">
+                <div style="padding-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <button type="submit" id="submit-button" class="btn-primary">
                         <span id="button-text">Push to GitHub</span>
-                        <div id="loader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-600 h-5 w-5 ml-3 hidden"></div>
+                        <div id="loader" class="loader hidden"></div>
                     </button>
-                    <button type="button" id="cancel-edit-button" class="w-full flex justify-center items-center px-6 py-3 border border-gray-600 text-base font-medium rounded-lg text-gray-300 bg-gray-700 hover:bg-gray-600 hidden">
+                    <button type="button" id="cancel-edit-button" class="btn-secondary hidden">
                         Cancel Edit
                     </button>
                 </div>
             </form>
-            <div id="message-box" class="mt-6 text-center text-sm"></div>
+            <div id="message-box" class="message-box"></div>
         </div>
 
-        <!-- Previous Posts Card -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-8">
-            <h2 class="text-2xl font-bold text-white mb-4">Previous Posts</h2>
-            <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                <input type="search" id="search-input" placeholder="Search posts..." class="flex-grow w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500">
-                <select id="sort-select" class="w-full sm:w-auto px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500">
-                    <option value="newest">Sort by Newest</option>
-                    <option value="az">Sort by A-Z</option>
-                </select>
+        <hr>
+
+        <!-- Previous Posts Section -->
+        <div id="posts-section" class="section">
+            <h2>Previous Posts</h2>
+            <div class="controls-container">
+                <input type="search" id="search-input" placeholder="Search posts..." class="flex-grow">
+                <button id="sort-button" class="btn-secondary full-width">Sort: Newest</button>
             </div>
-            <div id="posts-container">
-                <ul id="posts-list" class="space-y-4"></ul>
-                <div id="posts-loader" class="text-center py-4 text-gray-400"></div>
-                <div id="posts-error" class="text-center py-4 text-red-500"></div>
+            <div>
+                <ul id="posts-list" class="posts-list"></ul>
+                <div id="posts-loader" class="message-box message-info"></div>
+                <div id="posts-error" class="message-box message-error"></div>
             </div>
-            <div id="pagination-controls" class="mt-6 flex justify-between items-center">
-                 <button id="prev-button" class="px-4 py-2 text-sm font-medium bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 disabled:opacity-50">Previous</button>
-                <span id="page-indicator" class="text-sm text-gray-400"></span>
-                <button id="next-button" class="px-4 py-2 text-sm font-medium bg-gray-700 border border-gray-600 rounded-lg hover:bg-gray-600 disabled:opacity-50">Next</button>
+            <div id="pagination-controls" class="pagination-controls">
+                 <button id="prev-button" class="btn-secondary">Previous</button>
+                <span id="page-indicator"></span>
+                <button id="next-button" class="btn-secondary">Next</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- Element Selectors ---
         const form = document.getElementById('post-form');
         const submitButton = document.getElementById('submit-button');
         const buttonText = document.getElementById('button-text');
@@ -94,22 +226,23 @@
         const nextButton = document.getElementById('next-button');
         const pageIndicator = document.getElementById('page-indicator');
         const searchInput = document.getElementById('search-input');
-        const sortSelect = document.getElementById('sort-select');
+        const sortButton = document.getElementById('sort-button');
 
+        // --- State Variables ---
         let currentPage = 1;
         let totalPages = 1;
         let allPostsCache = [];
         let editState = { path: null, sha: null };
+        let currentSort = 'newest';
 
+        // --- Functions ---
         function renderPosts() {
             const searchTerm = searchInput.value.toLowerCase();
-            const sortBy = sortSelect.value;
-            
             let filteredPosts = allPostsCache.filter(post => post.name.toLowerCase().includes(searchTerm));
 
-            if (sortBy === 'newest') {
+            if (currentSort === 'newest') {
                 filteredPosts.sort((a, b) => b.name.localeCompare(a.name));
-            } else if (sortBy === 'az') {
+            } else { // 'az'
                 filteredPosts.sort((a, b) => a.name.localeCompare(b.name));
             }
 
@@ -120,14 +253,14 @@
             const paginatedPosts = filteredPosts.slice(start, end);
 
             if (paginatedPosts.length === 0) {
-                postsList.innerHTML = `<li class="text-center text-gray-400">${allPostsCache.length === 0 ? 'No posts found.' : 'No posts match your search.'}</li>`;
+                postsList.innerHTML = `<li style="text-align: center; color: #6b7280;">${allPostsCache.length === 0 ? 'No posts found.' : 'No posts match your search.'}</li>`;
             } else {
                  postsList.innerHTML = paginatedPosts.map(post => `
-                    <li class="flex justify-between items-center border-b border-gray-700 pb-3 last:border-b-0">
-                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline truncate" title="${post.name}">
+                    <li class="post-item">
+                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="post-link" title="${post.name}">
                             ${post.name}
                         </a>
-                        <button onclick="handleEditClick('${post.path}')" class="ml-4 px-3 py-1 text-sm font-medium text-blue-300 bg-blue-900/50 border border-transparent rounded-lg hover:bg-blue-900">Edit</button>
+                        <button onclick="handleEditClick('${post.path}')" class="btn-edit">Edit</button>
                     </li>
                 `).join('');
             }
@@ -159,7 +292,7 @@
 
         async function handleEditClick(path) {
             messageBox.textContent = 'Fetching post content...';
-            messageBox.className = 'mt-6 text-center text-sm text-gray-400';
+            messageBox.className = 'message-box message-info';
             form.scrollIntoView({ behavior: 'smooth' });
 
             try {
@@ -177,14 +310,14 @@
                 messageBox.textContent = '';
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
-                messageBox.className = 'mt-6 text-center text-sm text-red-500';
+                messageBox.className = 'message-box message-error';
             }
         }
         
         function resetFormAndState() {
             form.reset();
             editState = { path: null, sha: null };
-            formTitle.textContent = 'Post Something Today';
+            formTitle.textContent = 'Post Something';
             buttonText.textContent = 'Push to GitHub';
             cancelEditButton.classList.add('hidden');
             loadPassword();
@@ -206,6 +339,7 @@
             }
         }
 
+        // --- Event Listeners ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             savePassword();
@@ -234,24 +368,34 @@
                 if (!response.ok) throw new Error(result.error || 'An unknown error occurred.');
 
                 messageBox.textContent = `Success! ${result.message}`;
-                messageBox.className = 'mt-6 text-center text-sm text-green-500';
+                messageBox.className = 'message-box message-success';
                 resetFormAndState();
-                fetchPosts();
+                await fetchPosts();
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
-                messageBox.className = 'mt-6 text-center text-sm text-red-500';
+                messageBox.className = 'message-box message-error';
             } finally {
                 submitButton.disabled = false;
                 loader.classList.add('hidden');
+                 // Reset button text after operation
+                buttonText.textContent = editState.sha ? 'Update Post' : 'Push to GitHub';
             }
         });
         
         cancelEditButton.addEventListener('click', resetFormAndState);
         searchInput.addEventListener('input', () => { currentPage = 1; renderPosts(); });
-        sortSelect.addEventListener('change', () => { currentPage = 1; renderPosts(); });
+        
+        sortButton.addEventListener('click', () => {
+            currentSort = currentSort === 'newest' ? 'az' : 'newest';
+            sortButton.textContent = currentSort === 'newest' ? 'Sort: Newest' : 'Sort: A-Z';
+            currentPage = 1;
+            renderPosts();
+        });
+
         prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPosts(); } });
         nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; renderPosts(); } });
 
+        // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             loadPassword();
             fetchPosts();
