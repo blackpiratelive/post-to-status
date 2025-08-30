@@ -2,12 +2,31 @@
 // 1. GITHUB_TOKEN: A GitHub Personal Access Token with `repo` scope.
 // 2. GITHUB_REPO_OWNER: The owner of the target repository (e.g., your GitHub username).
 // 3. GITHUB_REPO_NAME: The name of the target repository.
-// 4. GITHUB_REPO_PATH: The folder path to fetch files from (e.g., 'posts').
-// 5. GITHUB_REPO_BRANCH: The name of the branch to read from (e.g., 'main' or 'master').
+// 4. GITHUB_REPO_PATH: The folder path to push files to (e.g., 'posts'). No leading/trailing slashes.
+// 5. GITHUB_REPO_BRANCH: The name of the branch to commit to (e.g., 'main' or 'master').
+// 6. POST_PASSWORD: The secret password to authorize posts.
 
-export default async function handler(req, res) {
-    if (req.method !== 'GET') {
-        res.setHeader('Allow', 'GET');
+// Helper function to convert string to Base64
+function toBase64(str) {
+    // In Node.js environment (like Vercel functions), Buffer is available globally.
+    return Buffer.from(str).toString('base64');
+}
+
+// Helper function to create a URL-friendly slug
+function slugify(text) {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with -
+        .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+        .replace(/\-\-+/g, '-') // Replace multiple - with single -
+        .substring(0, 50); // Truncate to 50 chars
+}
+
+module.exports = async (req, res) => {
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', 'POST');
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
@@ -16,65 +35,73 @@ export default async function handler(req, res) {
         GITHUB_REPO_OWNER,
         GITHUB_REPO_NAME,
         GITHUB_REPO_PATH,
-        GITHUB_REPO_BRANCH
+        GITHUB_REPO_BRANCH,
+        POST_PASSWORD
     } = process.env;
 
-    // Validate essential environment variables
-    if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME || !GITHUB_REPO_PATH || !GITHUB_REPO_BRANCH) {
-        console.error("Server configuration error: Missing GitHub environment variables.");
+    if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME || !GITHUB_REPO_PATH || !POST_PASSWORD || !GITHUB_REPO_BRANCH) {
+        console.error("Missing one or more required environment variables. Ensure GITHUB_REPO_BRANCH is set.");
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
+    const { title, content, password, client_iso_date } = req.body;
+
+    if (!title || !content || !password) {
+        return res.status(400).json({ error: 'Title, content, and password are required.' });
+    }
+
+    if (password !== POST_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid password.' });
+    }
+
     try {
-        const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${GITHUB_REPO_PATH}?ref=${GITHUB_REPO_BRANCH}`;
+        const postDate = client_iso_date ? new Date(client_iso_date) : new Date();
+        const dateForFilename = postDate.toISOString().split('T')[0];
+        const slug = slugify(title);
+        const filename = `${dateForFilename}-${slug}.md`;
+        const filePath = `${GITHUB_REPO_PATH}/${filename}`;
+        
+        const fileContent = `---\ntitle: "${title}"\ndate: "${postDate.toISOString()}"\n---\n\n${content}`;
+        const encodedContent = toBase64(fileContent);
+
+        const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
 
         const githubResponse = await fetch(url, {
+            method: 'PUT',
             headers: {
                 'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
             },
+            body: JSON.stringify({
+                message: `feat: add new post '${title}'`,
+                content: encodedContent,
+                branch: GITHUB_REPO_BRANCH,
+                committer: {
+                    name: 'Vercel Post Bot',
+                    email: 'bot@vercel.com',
+                },
+            }),
         });
 
+        const githubData = await githubResponse.json();
+
         if (!githubResponse.ok) {
-            // If the directory doesn't exist, GitHub returns a 404. We'll treat this as an empty list.
-            if (githubResponse.status === 404) {
-                return res.status(200).json({ posts: [], totalPages: 0, currentPage: 1 });
-            }
-            const errorData = await githubResponse.json();
-            console.error('GitHub API Error:', errorData.message);
-            return res.status(githubResponse.status).json({ error: `Failed to fetch from GitHub: ${errorData.message}` });
+            const errorMessage = githubData.message || 'Failed to create file on GitHub.';
+            console.error('GitHub API Error:', githubData);
+            return res.status(githubResponse.status).json({ error: errorMessage });
         }
-
-        const allFiles = await githubResponse.json();
         
-        // Filter out non-files (like subdirectories) and sort by filename descending.
-        // Since filenames start with YYYY-MM-DD, this sorts them by date.
-        const sortedPosts = allFiles
-            .filter(item => item.type === 'file' && item.name.endsWith('.md'))
-            .sort((a, b) => b.name.localeCompare(a.name));
+        console.log(`Successfully committed to branch '${GITHUB_REPO_BRANCH}'. GitHub Response:`, githubData);
 
-        // Manually handle pagination
-        const page = parseInt(req.query.page, 10) || 1;
-        const perPage = 20;
-        const totalPosts = sortedPosts.length;
-        const totalPages = Math.ceil(totalPosts / perPage);
-        const start = (page - 1) * perPage;
-        const end = start + perPage;
-        
-        const paginatedPosts = sortedPosts.slice(start, end);
-
-        return res.status(200).json({
-            posts: paginatedPosts.map(post => ({
-                name: post.name,
-                path: post.path,
-                url: post.html_url
-            })),
-            totalPages,
-            currentPage: page
+        return res.status(201).json({ 
+            message: 'File created successfully!',
+            path: githubData.content.html_url 
         });
 
     } catch (error) {
         console.error('An unexpected error occurred:', error);
         return res.status(500).json({ error: 'An internal server error occurred.' });
     }
-}
+};
+
