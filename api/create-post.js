@@ -100,18 +100,26 @@ async function handler(req, res) {
 
         const postUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
 
+        // Create a base payload for the GitHub API request
+        const payload = {
+            message: sha ? `feat: update post '${title || 'untitled'}'` : `feat: add new post '${title || 'untitled'}'`,
+            content: encodedContent,
+            branch: GITHUB_REPO_BRANCH,
+        };
+
+        // IMPORTANT: Only add the 'sha' key if we are updating an existing file.
+        // This prevents the "sha nil" error when creating new files.
+        if (sha) {
+            payload.sha = sha;
+        }
+
         const postResponse = await fetch(postUrl, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${GITHUB_TOKEN}`,
                 'Accept': 'application/vnd.github.v3+json',
             },
-            body: JSON.stringify({
-                message: sha ? `feat: update post '${title || 'untitled'}'` : `feat: add new post '${title || 'untitled'}'`,
-                content: encodedContent,
-                branch: GITHUB_REPO_BRANCH,
-                sha: sha,
-            }),
+            body: JSON.stringify(payload),
         });
 
         const postResult = await postResponse.json();
@@ -132,4 +140,5 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
+
 
