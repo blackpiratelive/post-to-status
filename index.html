@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>Post Dashboard</title>
     <style>
+        /* Minimal styling based on your preference */
         body { font-family: sans-serif; background-color: #121212; color: #e0e0e0; max-width: 800px; margin: 2rem auto; padding: 1rem; }
         h1, h2 { font-weight: 300; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
         label { display: block; margin: 1rem 0 0.5rem; color: #aaa; }
@@ -12,7 +13,7 @@
         textarea { min-height: 250px; }
         button { background-color: #3b82f6; cursor: pointer; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        #status { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; background-color: #2a2a2a; }
+        #status { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; background-color: #2a2a2a; word-break: break-word; }
         .post-list-item { padding: 1rem 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .post-list-item a { color: #e0e0e0; text-decoration: none; }
         .post-controls button { width: auto; padding: 0.5rem 1rem; margin-left: 0.5rem; }
@@ -37,10 +38,10 @@
         <input type="file" id="image" name="image" accept="image/*">
 
         <label for="imagePath">Image Upload Path (e.g., /assets/img)</label>
-        <input type="text" id="imagePath" name="imagePath" value="/assets/img">
+        <input type="text" id="imagePath" name="imagePath">
         
         <label for="imageShortcodeTemplate">Image Shortcode Template (use IMAGE_NAME)</label>
-        <input type="text" id="imageShortcodeTemplate" name="imageShortcodeTemplate" value='{{< img src="/img/IMAGE_NAME" >}}'>
+        <input type="text" id="imageShortcodeTemplate" name="imageShortcodeTemplate">
 
         <label for="password">Password</label>
         <input type="password" id="password" name="password" required>
@@ -90,6 +91,11 @@
             delete form.dataset.sha;
             delete form.dataset.path;
             cancelEditBtn.style.display = 'none';
+            // Restore saved settings
+            passwordInput.value = localStorage.getItem('postDashboardPassword') || '';
+            savePasswordCheckbox.checked = !!localStorage.getItem('postDashboardPassword');
+            imagePathInput.value = localStorage.getItem('postDashboardImagePath') || '/assets/img';
+            shortcodeTemplateInput.value = localStorage.getItem('postDashboardShortcode') || '{{< img src="/img/IMAGE_NAME" >}}';
         }
         
         cancelEditBtn.addEventListener('click', resetForm);
@@ -148,19 +154,8 @@
             document.getElementById('nextPage').disabled = currentPage >= totalPages;
         }
 
-        document.getElementById('prevPage').addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderPosts();
-            }
-        });
-        document.getElementById('nextPage').addEventListener('click', () => {
-            const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderPosts();
-            }
-        });
+        document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPosts(); } });
+        document.getElementById('nextPage').addEventListener('click', () => { const totalPages = Math.ceil(filteredPosts.length / postsPerPage); if (currentPage < totalPages) { currentPage++; renderPosts(); } });
 
         document.getElementById('search').addEventListener('input', applyFiltersAndRender);
         document.getElementById('sort').addEventListener('click', (e) => {
@@ -177,9 +172,9 @@
                     const response = await fetch(`/api/get-post-content?path=${encodeURIComponent(path)}`);
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.error);
-
+                    
                     const frontmatterEnd = data.content.indexOf('---', 3);
-                    const contentWithoutFrontmatter = data.content.substring(frontmatterEnd + 3).trim();
+                    const contentWithoutFrontmatter = frontmatterEnd !== -1 ? data.content.substring(frontmatterEnd + 3).trim() : data.content;
                     const titleMatch = data.content.match(/title:\s*"(.*?)"/);
 
                     document.getElementById('title').value = titleMatch ? titleMatch[1] : '';
@@ -212,11 +207,9 @@
                 const imagePath = document.getElementById('imagePath').value;
                 const shortcodeTemplate = document.getElementById('imageShortcodeTemplate').value;
 
-                const sha = event.target.dataset.sha;
-                const path = event.target.dataset.path;
-                
                 let finalContent = content;
-                let finalSha = sha;
+                let sha = form.dataset.sha;
+                const path = form.dataset.path;
 
                 if (imageFile) {
                     statusDiv.textContent = 'Uploading image...';
@@ -236,30 +229,27 @@
 
                     const imageResult = await imageResponse.json();
                     if (!imageResponse.ok) throw new Error(`Image Upload Error: ${imageResult.error}`);
-
                     statusDiv.textContent = `Image uploaded successfully.`;
                     
                     const finalShortcode = shortcodeTemplate.replace('IMAGE_NAME', imageResult.uniqueImageName);
                     finalContent = `${finalShortcode}\n\n${content}`;
 
                     if (sha) {
-                        statusDiv.textContent += ' Refreshing post data...';
+                        statusDiv.textContent += ' Waiting for GitHub...';
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        statusDiv.textContent = 'Refreshing post data...';
                         const refetchResponse = await fetch(`/api/get-post-content?path=${encodeURIComponent(path)}`);
                         const refetchResult = await refetchResponse.json();
                         if (!refetchResponse.ok) throw new Error(`Failed to refresh post data: ${refetchResult.error}`);
-                        finalSha = refetchResult.sha;
+                        sha = refetchResult.sha; // Update sha to the latest version
                     }
                 }
 
-                statusDiv.textContent = finalSha ? 'Updating post...' : 'Creating post...';
+                statusDiv.textContent = sha ? 'Updating post...' : 'Creating post...';
                 const postResponse = await fetch('/api/create-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title, content: finalContent, password,
-                        client_iso_date: new Date().toISOString(),
-                        sha: finalSha, path: path,
-                    }),
+                    body: JSON.stringify({ title, content: finalContent, password, client_iso_date: new Date().toISOString(), sha, path }),
                 });
 
                 const postResult = await postResponse.json();
@@ -272,6 +262,11 @@
             } catch (error) {
                 console.error('Submission failed:', error);
                 statusDiv.textContent = `Error: ${error.message}`;
+                // **THE BUG FIX:** If an error occurs during an update, we must reset the form
+                // so the user doesn't accidentally try to update again on the next submit.
+                if (form.dataset.sha) {
+                    resetForm();
+                }
             } finally {
                 submitButton.disabled = false;
             }
@@ -279,15 +274,8 @@
         
         form.addEventListener('submit', handleSubmit);
         
-        // Load and save settings
         window.addEventListener('DOMContentLoaded', () => {
-            const savedPassword = localStorage.getItem('postDashboardPassword');
-            if (savedPassword) {
-                passwordInput.value = savedPassword;
-                savePasswordCheckbox.checked = true;
-            }
-            imagePathInput.value = localStorage.getItem('postDashboardImagePath') || '/assets/img';
-            shortcodeTemplateInput.value = localStorage.getItem('postDashboardShortcode') || '{{< img src="/img/IMAGE_NAME" >}}';
+            resetForm(); // Use resetForm to load all initial settings
             fetchPosts();
         });
 
@@ -298,17 +286,9 @@
                 localStorage.removeItem('postDashboardPassword');
             }
         });
-        passwordInput.addEventListener('input', () => {
-            if (savePasswordCheckbox.checked) {
-                localStorage.setItem('postDashboardPassword', passwordInput.value);
-            }
-        });
-        imagePathInput.addEventListener('input', () => {
-            localStorage.setItem('postDashboardImagePath', imagePathInput.value);
-        });
-        shortcodeTemplateInput.addEventListener('input', () => {
-            localStorage.setItem('postDashboardShortcode', shortcodeTemplateInput.value);
-        });
+        passwordInput.addEventListener('input', () => { if (savePasswordCheckbox.checked) { localStorage.setItem('postDashboardPassword', passwordInput.value); } });
+        imagePathInput.addEventListener('input', () => { localStorage.setItem('postDashboardImagePath', imagePathInput.value); });
+        shortcodeTemplateInput.addEventListener('input', () => { localStorage.setItem('postDashboardShortcode', shortcodeTemplateInput.value); });
 
     </script>
 </body>
