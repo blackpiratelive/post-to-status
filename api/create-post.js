@@ -95,6 +95,9 @@ export default async function handler(req, res) {
             return res.status(githubResponse.status).json({ error: errorMessage });
         }
 
+        // Log the successful GitHub response for debugging
+        console.log('Successfully received data from GitHub API:', githubData);
+
         // 8. Send success response
         return res.status(201).json({ 
             message: 'File created successfully!',
@@ -106,3 +109,4 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'An internal server error occurred.' });
     }
 }
+
