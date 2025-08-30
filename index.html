@@ -262,11 +262,10 @@
             } catch (error) {
                 console.error('Submission failed:', error);
                 statusDiv.textContent = `Error: ${error.message}`;
-                // **THE BUG FIX:** If an error occurs during an update, we must reset the form
-                // so the user doesn't accidentally try to update again on the next submit.
-                if (form.dataset.sha) {
-                    resetForm();
-                }
+                // **THE BUG FIX:** If any error occurs during submission, we must fully
+                // reset the form to prevent it from getting stuck in a broken "edit" state.
+                // This solves the issue where the `sha` is lost but the form still tries to update.
+                resetForm();
             } finally {
                 submitButton.disabled = false;
             }
@@ -293,4 +292,5 @@
     </script>
 </body>
 </html>
+
 
