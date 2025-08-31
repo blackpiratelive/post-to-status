@@ -8,18 +8,15 @@
         body { background-color: #111; color: #eee; font-family: sans-serif; font-size: 1.2rem; line-height: 1.6; padding: 1rem; }
         .container { max-width: 600px; margin: 2rem auto; }
         h1 { font-size: 2.5rem; text-align: center; margin-bottom: 2rem; }
-        /* **NEW** Responsive form group for better mobile layout */
         .form-group { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
         textarea, input { width: 100%; padding: 0.8rem; background: #222; color: #eee; border: 1px solid #444; border-radius: 4px; font-size: 1.1rem; }
         label { display: block; margin-bottom: 0.2rem; color: #aaa; }
         button { width: 100%; padding: 1rem; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 1.2rem; cursor: pointer; transition: background-color 0.2s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        .status { margin-top: 1.5rem; text-align: center; font-size: 1.1rem; }
+        .status { margin-top: 1.5rem; text-align: center; font-size: 1.1rem; white-space: pre-wrap; word-wrap: break-word; }
         .status.success { color: #28a745; }
         .status.error { color: #dc3545; }
-
-        /* **NEW** Media query for larger screens */
         @media (min-width: 640px) {
             .form-group { flex-direction: row; align-items: center; }
             .form-group label { width: 150px; flex-shrink: 0; }
@@ -61,8 +58,6 @@
         const submitButton = document.getElementById('submit-button');
         const statusDiv = document.getElementById('status');
         const imageInput = document.getElementById('image-input');
-        const nameInput = document.getElementById('name');
-        const websiteInput = document.getElementById('website');
         const verificationLabel = document.getElementById('verification-label');
         let num1, num2;
 
@@ -98,28 +93,29 @@
                 }
 
                 const response = await fetch('/api/create-guestbook-entry', {
-                    // **THE FIX for "Method Not Allowed"**
-                    // Explicitly setting the method to 'POST'
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name: nameInput.value,
-                        website: websiteInput.value,
+                        name: document.getElementById('name').value,
+                        website: document.getElementById('website').value,
                         content: document.getElementById('content').value,
                         verification: document.getElementById('verification').value,
-                        num1: num1,
-                        num2: num2,
-                        imageData,
-                        imageName,
+                        num1, num2, imageData, imageName,
                     }),
                 });
-
-                const result = await response.json();
-
+                
+                // **THE FIX for all error types**
+                const responseText = await response.text();
                 if (!response.ok) {
-                    throw new Error(result.error || 'An unknown error occurred.');
+                    let errorMessage = responseText;
+                    try {
+                        const errorJson = JSON.parse(responseText);
+                        errorMessage = errorJson.error || errorMessage;
+                    } catch (e) { /* Not a JSON error, use the raw text */ }
+                    throw new Error(errorMessage);
                 }
 
+                const result = JSON.parse(responseText);
                 statusDiv.textContent = `${result.message} The website is now updating, so your entry should appear in 1-2 minutes.`;
                 statusDiv.classList.add('success');
                 form.reset();
