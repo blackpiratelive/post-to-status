@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guestbook Embed</title>
+    <style>
+        :root { --bg: #ffffff; --text: #111827; --border: #d1d5db; --primary: #2563eb; --success: #16a34a; --error: #dc2626; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; font-size: 16px; line-height: 1.5; }
+        form { display: flex; flex-direction: column; gap: 1rem; }
+        textarea, input { width: 100%; padding: 0.6rem; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; font-size: 1rem; }
+        label { font-size: 0.9rem; color: #4b5563; }
+        button { padding: 0.8rem; background-color: var(--primary); color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        button:disabled { background-color: #9ca3af; }
+        .status { margin-top: 1rem; text-align: center; white-space: pre-wrap; word-wrap: break-word; }
+        .status.success { color: var(--success); }
+        .status.error { color: var(--error); }
+    </style>
+</head>
+<body>
+    <form id="guestbook-form">
+        <label for="name">Your Name (Optional)</label>
+        <input type="text" id="name" autocomplete="name">
+        <label for="website">Your Website (Optional)</label>
+        <input type="url" id="website" placeholder="https://example.com" autocomplete="url">
+        <label for="content">Your Message</label>
+        <textarea id="content" rows="5" required></textarea>
+        <label for="image">Attach an Image (Optional)</label>
+        <input type="file" id="image-input" accept="image/*">
+        <label for="verification" id="verification-label">Verification</label>
+        <input type="text" id="verification" required autocomplete="off">
+        <button type="submit" id="submit-button">Submit Entry</button>
+    </form>
+    <div id="status" class="status"></div>
+
+    <script>
+        const form = document.getElementById('guestbook-form');
+        const submitButton = document.getElementById('submit-button');
+        const statusDiv = document.getElementById('status');
+        const imageInput = document.getElementById('image-input');
+        const verificationLabel = document.getElementById('verification-label');
+        let num1, num2;
+
+        const sendHeight = () => {
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({ type: 'guestbookHeight', height: height }, '*');
+        };
+
+        function generateVerificationQuestion() {
+            num1 = Math.floor(Math.random() * 10) + 1;
+            num2 = Math.floor(Math.random() * 10) + 1;
+            verificationLabel.textContent = `Verification: What is ${num1} + ${num2}?`;
+        }
+
+        const getBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+            statusDiv.className = 'status';
+            statusDiv.textContent = '';
+            sendHeight();
+
+            let imageData = null, imageName = null;
+            try {
+                if (imageInput.files[0]) {
+                    imageData = await getBase64(imageInput.files[0]);
+                    imageName = imageInput.files[0].name;
+                }
+                const response = await fetch('/api/create-guestbook-entry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('name').value,
+                        website: document.getElementById('website').value,
+                        content: document.getElementById('content').value,
+                        verification: document.getElementById('verification').value,
+                        num1, num2, imageData, imageName,
+                    }),
+                });
+                
+                // **IMPROVED ERROR HANDLING**
+                // If the response is not OK, we try to get the real error message.
+                if (!response.ok) {
+                    let errorMessage;
+                    try {
+                        // First, try to parse it as JSON (for our own backend errors)
+                        const errorResult = await response.json();
+                        errorMessage = errorResult.error;
+                    } catch (e) {
+                        // If that fails, it's not JSON, so we read it as plain text.
+                        // This will capture Vercel's HTML error pages.
+                        errorMessage = await response.text();
+                    }
+                    throw new Error(errorMessage || 'An unknown server error occurred.');
+                }
+
+                // If we get here, the response was successful.
+                const result = await response.json();
+                statusDiv.textContent = `${result.message} Your entry will appear in 1-2 minutes.`;
+                statusDiv.classList.add('success');
+                form.reset();
+                generateVerificationQuestion();
+            } catch (error) {
+                statusDiv.textContent = `Error: ${error.message}`;
+                statusDiv.classList.add('error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Entry';
+                sendHeight();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            generateVerificationQuestion();
+            sendHeight();
+            new ResizeObserver(sendHeight).observe(document.body);
+        });
+    </script>
+</body>
+</html>
+
