@@ -45,20 +45,40 @@ async function handler(req, res) {
 
     try {
         let filePath = path;
-        
-        // **THE BUG FIX IS HERE**
+        let postDateISO; // This will hold the final date string for the frontmatter
+
         // If 'path' is not provided, this is a new post.
-        // We generate a new filename and make it unique to prevent collisions.
         if (!filePath) {
-            const date = (client_iso_date || new Date().toISOString()).split('T')[0];
+            // **NEW LOGIC FOR GMT+5:30 TIMEZONE**
+            // For new posts, we explicitly calculate the date and time in IST.
+            const now = new Date();
+            // The offset for IST (GMT+5:30) is 330 minutes.
+            const istOffsetMilliseconds = 330 * 60 * 1000;
+            // Create a new Date object representing the time in IST.
+            const istDate = new Date(now.getTime() + istOffsetMilliseconds);
+
+            // Extract date parts from the new IST Date object using UTC methods.
+            const year = istDate.getUTCFullYear();
+            const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(istDate.getUTCDate()).padStart(2, '0');
+            const hours = String(istDate.getUTCHours()).padStart(2, '0');
+            const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+
+            const dateForFilename = `${year}-${month}-${day}`;
+            // Manually construct the ISO string with the correct +05:30 offset.
+            postDateISO = `${dateForFilename}T${hours}:${minutes}:${seconds}+05:30`;
+
             const slug = slugify(title);
-            // Add a unique suffix based on the current timestamp to prevent filename collisions
             const unique_suffix = Date.now().toString().slice(-6); 
-            const filename = `${date}-${slug}-${unique_suffix}.md`;
+            const filename = `${dateForFilename}-${slug}-${unique_suffix}.md`;
             filePath = `${GITHUB_REPO_PATH}/${filename}`;
+        } else {
+            // For updates, we preserve the original date sent from the client.
+            postDateISO = new Date(client_iso_date).toISOString();
         }
 
-        const postContent = `---\ntitle: "${title || ''}"\ndate: "${new Date(client_iso_date).toISOString()}"\n---\n\n${content}`;
+        const postContent = `---\ntitle: "${title || ''}"\ndate: "${postDateISO}"\n---\n\n${content}`;
         const encodedContent = Buffer.from(postContent).toString('base64');
         const postUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
 
@@ -68,7 +88,6 @@ async function handler(req, res) {
             branch: GITHUB_REPO_BRANCH,
         };
 
-        // Only add the 'sha' key if we are updating an existing file.
         if (sha) {
             payload.sha = sha;
         }
@@ -81,7 +100,6 @@ async function handler(req, res) {
 
         const postResult = await postResponse.json();
 
-        // Handle specific GitHub API errors for better user feedback
         if (!postResponse.ok) {
             if (postResponse.status === 422 && postResult.message.includes("sha wasn't supplied")) {
                  throw new Error("Filename conflict. The post title may be too similar to an existing post. Please try a different title.");
