@@ -24,6 +24,14 @@
         <h1>Leave a Message</h1>
         <form id="guestbook-form">
             <div>
+                <label for="name">Your Name (Optional)</label>
+                <input type="text" id="name" autocomplete="name">
+            </div>
+            <div>
+                <label for="website">Your Website (Optional)</label>
+                <input type="url" id="website" placeholder="https://example.com" autocomplete="url">
+            </div>
+            <div>
                 <label for="content">Your Message</label>
                 <textarea id="content" rows="6" required></textarea>
             </div>
@@ -32,8 +40,8 @@
                 <input type="file" id="image-input" accept="image/*">
             </div>
             <div>
-                <label for="verification">Verification: What is 5 plus 3?</label>
-                <input type="text" id="verification" required autocomplete="off">
+                <label for="verification" id="verification-label">Verification Question</label>
+                <input type="text" id="verification" required autocomplete="off" placeholder="Your answer">
             </div>
             <button type="submit" id="submit-button">Submit Entry</button>
         </form>
@@ -45,6 +53,17 @@
         const submitButton = document.getElementById('submit-button');
         const statusDiv = document.getElementById('status');
         const imageInput = document.getElementById('image-input');
+        const nameInput = document.getElementById('name');
+        const websiteInput = document.getElementById('website');
+        const verificationLabel = document.getElementById('verification-label');
+
+        let num1, num2; // Variables to hold the numbers for the question
+
+        function generateVerificationQuestion() {
+            num1 = Math.floor(Math.random() * 10) + 1; // Random number from 1 to 10
+            num2 = Math.floor(Math.random() * 10) + 1; // Random number from 1 to 10
+            verificationLabel.textContent = `Verification: What is ${num1} plus ${num2}?`;
+        }
 
         function getBase64(file) {
             return new Promise((resolve, reject) => {
@@ -75,8 +94,12 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        name: nameInput.value,
+                        website: websiteInput.value,
                         content: document.getElementById('content').value,
                         verification: document.getElementById('verification').value,
+                        num1: num1, // Send the numbers to the backend
+                        num2: num2,
                         imageData,
                         imageName,
                     }),
@@ -88,9 +111,10 @@
                     throw new Error(result.error || 'An unknown error occurred.');
                 }
 
-                statusDiv.textContent = result.message;
+                statusDiv.textContent = `${result.message} The website is now updating, so your entry should appear in 1-2 minutes.`;
                 statusDiv.classList.add('success');
                 form.reset();
+                generateVerificationQuestion(); // Generate a new question for the next user
 
             } catch (error) {
                 statusDiv.textContent = `Error: ${error.message}`;
@@ -100,6 +124,10 @@
                 submitButton.textContent = 'Submit Entry';
             }
         });
+
+        // Generate the first question when the page loads
+        document.addEventListener('DOMContentLoaded', generateVerificationQuestion);
     </script>
 </body>
 </html>
+

@@ -1,16 +1,11 @@
 const { Buffer } = require('buffer');
 
-// A simple question for the bot verification
-const VERIFICATION_QUESTION = "What is 5 plus 3?";
-const VERIFICATION_ANSWER = "8";
-
 async function handler(req, res) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', 'POST');
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // Environment variables are still needed for GitHub access
     const {
         GITHUB_TOKEN,
         GITHUB_REPO_OWNER,
@@ -18,7 +13,6 @@ async function handler(req, res) {
         GITHUB_REPO_BRANCH
     } = process.env;
 
-    // These variables should point to a specific subfolder for guestbook entries
     const GUESTBOOK_POST_PATH = process.env.GUESTBOOK_POST_PATH || 'content/guestbook';
     const GUESTBOOK_IMAGE_PATH = process.env.GUESTBOOK_IMAGE_PATH || 'assets/guestbook-images';
 
@@ -27,21 +21,25 @@ async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    const { content, verification, imageData, imageName } = req.body;
+    const { name, website, content, verification, num1, num2, imageData, imageName } = req.body;
 
     if (!content) {
         return res.status(400).json({ error: 'Content is required.' });
     }
     
-    // Simple bot verification
-    if (!verification || verification.trim() !== VERIFICATION_ANSWER) {
+    // **NEW: Dynamic Bot Verification**
+    // It now expects the numbers and the user's answer, then validates on the server.
+    if (verification === undefined || num1 === undefined || num2 === undefined) {
+        return res.status(400).json({ error: 'Verification information is missing.' });
+    }
+    const correctAnswer = Number(num1) + Number(num2);
+    if (Number(verification) !== correctAnswer) {
         return res.status(400).json({ error: 'Incorrect answer to the verification question.' });
     }
 
     try {
         let finalContent = content;
         
-        // Handle optional image upload
         if (imageData && imageName) {
             const base64Data = imageData.split(';base64,').pop();
             const imageExtension = imageName.split('.').pop();
@@ -59,12 +57,10 @@ async function handler(req, res) {
             const imageUploadResult = await imageUploadResponse.json();
             if (!imageUploadResponse.ok) throw new Error(`Failed to upload image: ${imageUploadResult.message}`);
 
-            // Use a default, hardcoded shortcode structure
             const finalShortcode = `{{< img src="/${GUESTBOOK_IMAGE_PATH.replace(/^\/|\/$/g, '')}/${uniqueImageName}" >}}`;
             finalContent = `${finalShortcode}\n\n${content}`;
         }
         
-        // Create the markdown post file
         const now = new Date();
         const istOffsetMilliseconds = 330 * 60 * 1000;
         const istDate = new Date(now.getTime() + istOffsetMilliseconds);
@@ -74,7 +70,15 @@ async function handler(req, res) {
         const filename = `${dateForFilename}-guestbook-${unique_suffix}.md`;
         const filePath = `${GUESTBOOK_POST_PATH}/${filename}`;
 
-        const postContent = `---\ndate: "${postDateISO}"\ntags: [guestbook]\n---\n\n${finalContent}`;
+        let frontmatter = `date: "${postDateISO}"\ntags: [guestbook]\n`;
+        if (name) {
+            frontmatter += `name: "${name.replace(/"/g, '\\"')}"\n`;
+        }
+        if (website) {
+            frontmatter += `website: "${website}"\n`;
+        }
+
+        const postContent = `---\n${frontmatter}---\n\n${finalContent}`;
         const encodedContent = Buffer.from(postContent).toString('base64');
         const postUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
 
@@ -96,3 +100,4 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
+
