@@ -91,8 +91,10 @@
                     imageData = await getBase64(imageInput.files[0]);
                     imageName = imageInput.files[0].name;
                 }
-
-                const response = await fetch('/api/create-guestbook-entry', {
+                
+                // **THE FIX for the "Page Not Found" error**
+                // The URL now correctly points to your `guestbook-entry.js` file.
+                const response = await fetch('/api/guestbook-entry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -104,7 +106,6 @@
                     }),
                 });
                 
-                // **THE FIX for all error types**
                 const responseText = await response.text();
                 if (!response.ok) {
                     let errorMessage = responseText;
