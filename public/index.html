@@ -4,125 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Post Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
     <link href="/styles/tailwind.css" rel="stylesheet">
     <style>
-        /* Using a minimal style block for custom properties and base styles */
-        :root {
-            --ios-blue: #007aff;
-        }
+        /* Additional custom styles for iOS-like feel */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: none; /* Prevents pull-to-refresh */
         }
-        .note-item.selected {
-            background-color: var(--ios-blue);
-            color: white;
+        .font-kalam {
+            font-family: 'Kalam', cursive;
         }
-        .note-item.selected .note-date {
-            color: rgba(255, 255, 255, 0.7);
+        /* Style for the color picker input */
+        #color-picker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        #color-picker::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #e5e7eb;
+        }
+        #color-picker::-moz-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #e5e7eb;
+        }
+        /* Custom animation for the popup */
+        .popup-content {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .show .popup-content {
+            transform: translateY(0);
         }
     </style>
 </head>
-<body class="bg-gray-800 flex items-center justify-center h-screen p-4 md:p-8">
+<body class="bg-paper text-gray-800">
+    <div class="container max-w-2xl mx-auto p-4">
+        <header class="text-center my-4 md:my-8">
+            <h1 class="text-5xl font-kalam text-yellow-500">New Note</h1>
+        </header>
 
-    <div class="app-window w-full max-w-5xl h-[80vh] bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden">
-        <!-- Title Bar -->
-        <div class="title-bar h-12 bg-gray-200 border-b border-gray-300 flex-shrink-0"></div>
-        
-        <div class="main-container flex flex-grow min-h-0">
-            <!-- Sidebar / Previous Posts -->
-            <div id="sidebar" class="w-1/3 bg-gray-100 border-r border-gray-200 flex flex-col">
-                <div class="p-4 border-b border-gray-200">
-                    <h1 class="text-2xl font-bold">Posts</h1>
+        <!-- Main Form Section -->
+        <main id="form-section">
+            <!-- Content and Title Form -->
+            <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+                <form id="post-form">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="title" placeholder="Title" class="w-full text-xl font-bold placeholder-gray-400 focus:outline-none bg-transparent">
+                    </div>
+                    <div class="p-4">
+                        <textarea id="content" required placeholder="Start writing..." class="w-full h-40 text-base placeholder-gray-400 focus:outline-none bg-transparent resize-none"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Attachments Section -->
+            <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+                 <!-- This is where the image/drawing preview will appear -->
+                <div id="attachment-preview-container" class="hidden group relative">
+                    <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-lg w-full max-h-60 object-contain mb-2 border border-gray-200">
+                    <button id="clear-attachment-button" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
-                <div class="p-4 border-b border-gray-200">
-                    <input type="search" id="search-input" placeholder="Search posts..." class="w-full text-sm bg-white border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                
+                <div id="attachment-buttons" class="flex items-center gap-4">
+                    <button type="button" id="open-draw-popup" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition">Draw Picture</button>
+                    <label for="image-input" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition cursor-pointer relative">
+                        Upload Image
+                        <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    </label>
                 </div>
-                <div class="notes-list flex-grow overflow-y-auto">
-                    <ul id="posts-list"></ul>
+            </div>
+
+            <!-- Settings & Password Section -->
+            <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+                <div class="mb-4">
+                    <label for="image-path-input" class="text-xs text-gray-500 mb-1 block">Image Path</label>
+                    <input type="text" id="image-path-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div class="mb-4">
+                    <label for="image-shortcode-input" class="text-xs text-gray-500 mb-1 block">Shortcode Template <span class="text-gray-400">(use IMAGE_NAME)</span></label>
+                    <input type="text" id="image-shortcode-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div>
+                    <label for="password" class="text-xs text-gray-500 mb-1 block">Password</label>
+                    <input type="password" id="password" required class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div class="flex items-center mt-2">
+                    <input type="checkbox" id="save-password" class="h-4 w-4 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded">
+                    <label for="save-password" class="ml-2 block text-sm text-gray-700">Save Password</label>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="button-group space-y-3">
+                <button type="submit" id="submit-button" form="post-form" class="w-full py-3 px-4 bg-yellow-400 hover:bg-yellow-500 text-white rounded-xl text-base font-semibold shadow-sm transition disabled:bg-gray-300">
+                    <span id="button-text">Save Note</span>
+                </button>
+                <button type="button" id="cancel-edit-button" class="hidden w-full py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-base font-semibold transition">Cancel Edit</button>
+            </div>
+            <div id="message-box" class="mt-4 text-center text-sm"></div>
+        </main>
+
+        <!-- Previous Posts Section -->
+        <section id="posts-section" class="mt-12">
+            <h2 class="text-xl font-bold mb-4">Previous Notes</h2>
+            <div class="bg-white rounded-xl shadow-sm">
+                 <div class="p-4 border-b border-gray-200">
+                    <input type="search" id="search-input" placeholder="Search notes..." class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div>
+                    <ul id="posts-list" class="divide-y divide-gray-200"></ul>
                     <div id="posts-loader" class="text-center p-4 text-gray-500 text-sm"></div>
                     <div id="posts-error" class="text-center p-4 text-red-500 text-sm"></div>
                 </div>
-                <div id="pagination-controls" class="hidden flex justify-between items-center p-2 border-t border-gray-200">
-                    <button id="prev-button" class="text-sm font-semibold text-blue-600 px-3 py-1 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                    <span id="page-indicator" class="text-xs text-gray-500"></span>
-                    <button id="next-button" class="text-sm font-semibold text-blue-600 px-3 py-1 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                <div id="pagination-controls" class="hidden flex justify-between items-center p-4 border-t border-gray-200">
+                    <button id="prev-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <span id="page-indicator" class="text-sm text-gray-500"></span>
+                    <button id="next-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
                 </div>
             </div>
-
-            <!-- Content Area / Form -->
-            <div class="content-area flex-grow flex flex-col bg-yellow-50">
-                <form id="post-form" class="flex flex-col flex-grow">
-                    <div class="p-6 border-b border-gray-200">
-                        <input type="text" id="title" placeholder="Post Title" class="w-full text-3xl font-bold placeholder-gray-400 focus:outline-none bg-transparent">
-                    </div>
-                    <div class="p-6 flex-grow">
-                        <textarea id="content" required placeholder="Start writing..." class="w-full h-full text-base placeholder-gray-400 focus:outline-none bg-transparent resize-none"></textarea>
-                    </div>
-                </form>
-                
-                 <!-- Attachments & Settings -->
-                <div class="p-6 bg-white border-t border-gray-200 flex-shrink-0">
-                    <div id="attachment-preview-container" class="hidden group relative mb-4">
-                        <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-lg w-full max-h-40 object-contain border border-gray-200">
-                        <button id="clear-attachment-button" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                    </div>
-                    <div id="attachment-buttons" class="flex items-center gap-4 mb-4">
-                        <button type="button" id="open-draw-popup" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">Draw Picture</button>
-                        <label class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium cursor-pointer">
-                            Upload Image
-                            <input type="file" id="image-input" accept="image/*" class="hidden">
-                        </label>
-                    </div>
-                     <div class="grid grid-cols-2 gap-4 mb-4">
-                         <div>
-                            <label for="image-path-input" class="text-xs text-gray-500 mb-1 block">Image Path</label>
-                            <input type="text" id="image-path-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                         </div>
-                         <div>
-                             <label for="image-shortcode-input" class="text-xs text-gray-500 mb-1 block">Shortcode Template</label>
-                             <input type="text" id="image-shortcode-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                         </div>
-                     </div>
-                     <div>
-                        <label for="password" class="text-xs text-gray-500 mb-1 block">Password</label>
-                        <input type="password" id="password" required class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <div class="flex items-center mt-2">
-                            <input type="checkbox" id="save-password" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            <label for="save-password" class="ml-2 block text-sm text-gray-700">Save Password</label>
-                        </div>
-                     </div>
-                </div>
-                 <div class="p-4 bg-white border-t border-gray-200 flex-shrink-0 space-y-2">
-                    <button type="submit" id="submit-button" form="post-form" class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold disabled:bg-gray-300">
-                        <span id="button-text">Publish</span>
-                    </button>
-                    <button type="button" id="cancel-edit-button" class="hidden w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold">Cancel Edit</button>
-                    <div id="message-box" class="text-center text-sm"></div>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
 
     <!-- Drawing Popup -->
-    <div id="draw-popup" class="fixed inset-0 bg-black/40 flex justify-center items-center opacity-0 invisible transition-opacity duration-300 z-50">
-        <div class="popup-content bg-white flex flex-col rounded-lg shadow-xl w-full max-w-2xl h-3/4 transform scale-95 opacity-0 transition-all duration-300">
+    <div id="draw-popup" class="fixed inset-0 bg-black/40 flex justify-center items-center opacity-0 invisible transition-opacity duration-300">
+        <div class="popup-content fixed inset-0 bg-white flex flex-col transform translate-y-full">
             <header class="flex justify-between items-center p-4 border-b border-gray-200 flex-shrink-0">
-                <button id="cancel-draw-button" class="text-blue-600 font-medium">Cancel</button>
+                <button id="cancel-draw-button" class="text-yellow-500 font-medium">Cancel</button>
                 <h3 class="font-semibold">Draw</h3>
-                <button id="save-draw-button" class="text-blue-600 font-bold">Done</button>
+                <button id="save-draw-button" class="text-yellow-500 font-bold">Save</button>
             </header>
-            <main class="flex-grow relative bg-gray-100">
+            <main class="flex-grow relative">
                 <canvas id="drawing-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
             </main>
-             <footer class="p-2 border-t border-gray-200 flex-shrink-0">
+             <footer class="popup-footer p-4 border-t border-gray-200 flex-shrink-0">
                  <div class="flex items-center justify-between w-full">
-                     <button id="undo-button" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
-                     <div id="color-palette" class="flex items-center gap-2"></div>
-                     <input type="color" id="color-picker" value="#000000" class="w-10 h-10 border-none rounded-full overflow-hidden">
+                     <button id="undo-button" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                         </svg>
+                     </button>
+                     <div id="color-palette" class="flex items-center gap-2">
+                         <!-- Color palette buttons will be injected by JS -->
+                     </div>
+                     <input type="color" id="color-picker" value="#000000">
                  </div>
             </footer>
         </div>
@@ -132,25 +169,28 @@
         // --- Element Selectors ---
         const form = document.getElementById('post-form');
         const submitButton = document.getElementById('submit-button');
-        // ... (all other selectors from previous script)
-        const postsList = document.getElementById('posts-list');
-        const postsLoader = document.getElementById('posts-loader');
-        const postsError = document.getElementById('posts-error');
+        const buttonText = document.getElementById('button-text');
+        const messageBox = document.getElementById('message-box');
         const titleInput = document.getElementById('title');
         const contentInput = document.getElementById('content');
         const passwordInput = document.getElementById('password');
         const savePasswordCheckbox = document.getElementById('save-password');
-        const imageInput = document.getElementById('image-input');
-        const searchInput = document.getElementById('search-input');
-        const buttonText = document.getElementById('button-text');
-        const messageBox = document.getElementById('message-box');
         const cancelEditButton = document.getElementById('cancel-edit-button');
+        const imageInput = document.getElementById('image-input');
         const imagePathInput = document.getElementById('image-path-input');
         const imageShortcodeInput = document.getElementById('image-shortcode-input');
+        const postsList = document.getElementById('posts-list');
+        const postsLoader = document.getElementById('posts-loader');
+        const postsError = document.getElementById('posts-error');
+        const searchInput = document.getElementById('search-input');
+        
+        // Attachment Previews
         const attachmentPreviewContainer = document.getElementById('attachment-preview-container');
         const attachmentPreview = document.getElementById('attachment-preview');
         const clearAttachmentButton = document.getElementById('clear-attachment-button');
         const attachmentButtons = document.getElementById('attachment-buttons');
+
+        // Drawing Popup & Canvas
         const canvas = document.getElementById('drawing-canvas');
         const ctx = canvas.getContext('2d');
         const colorPicker = document.getElementById('color-picker');
@@ -160,20 +200,21 @@
         const saveDrawButton = document.getElementById('save-draw-button');
         const undoButton = document.getElementById('undo-button');
         const colorPalette = document.getElementById('color-palette');
+        
+        // Pagination
         const paginationControls = document.getElementById('pagination-controls');
         const prevButton = document.getElementById('prev-button');
         const nextButton = document.getElementById('next-button');
         const pageIndicator = document.getElementById('page-indicator');
 
-
         // --- State Variables ---
         let allPostsCache = [];
-        let editState = { path: null, sha: null, selectedElement: null };
+        let editState = { path: null, sha: null };
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
         let drawHistory = [];
-        let currentAttachment = null;
+        let currentAttachment = null; // Can be 'file' or 'drawing'
         let currentPage = 1;
         const postsPerPage = 10;
         let totalPages = 1;
@@ -190,18 +231,18 @@
             attachmentPreview.src = '#';
             attachmentPreviewContainer.classList.add('hidden');
             attachmentButtons.classList.remove('hidden');
-            imageInput.value = '';
-            localStorage.removeItem('savedCanvas');
+            imageInput.value = ''; // Clear file input
+            localStorage.removeItem('savedCanvas'); // Clear saved drawing
             currentAttachment = null;
         }
-        
+
         // --- Canvas & Drawing Functions ---
         const paletteColors = ['#000000', '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#AF52DE'];
 
         function setupColorPalette() {
             paletteColors.forEach(color => {
                 const button = document.createElement('button');
-                button.className = 'w-6 h-6 rounded-full border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500';
+                button.className = 'w-6 h-6 rounded-full border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-yellow-400';
                 button.style.backgroundColor = color;
                 button.addEventListener('click', () => {
                     ctx.strokeStyle = color;
@@ -228,7 +269,7 @@
 
         function undoLast() {
             if (drawHistory.length > 1) {
-                drawHistory.pop();
+                drawHistory.pop(); // Remove current state
                 const lastState = drawHistory[drawHistory.length - 1];
                 const img = new Image();
                 img.onload = () => {
@@ -237,9 +278,10 @@
                 };
                 img.src = lastState;
             } else {
+                // If only one state (or zero), clear it all
                 drawHistory = [];
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                saveHistory();
+                saveHistory(); // Save the blank state
             }
         }
 
@@ -288,23 +330,24 @@
 
         // --- Popup Functions ---
         function openPopup() {
-            const popupContent = drawPopup.querySelector('.popup-content');
+            drawPopup.classList.add('show');
             drawPopup.classList.remove('invisible', 'opacity-0');
-            popupContent.classList.remove('scale-95', 'opacity-0');
+            drawPopup.classList.add('opacity-100');
             document.body.style.overflow = 'hidden';
             setTimeout(() => {
                 resizeCanvas();
-                if (drawHistory.length === 0) saveHistory();
+                if (drawHistory.length === 0) {
+                    saveHistory();
+                }
             }, 50);
         }
         
         function closePopup() {
-            const popupContent = drawPopup.querySelector('.popup-content');
+            drawPopup.classList.remove('show', 'opacity-100');
             drawPopup.classList.add('opacity-0');
-            popupContent.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 drawPopup.classList.add('invisible');
-            }, 300);
+            }, 300); // Match animation duration
             document.body.style.overflow = '';
         }
 
@@ -321,24 +364,15 @@
             const paginatedPosts = filteredPosts.slice(start, end);
 
             if (paginatedPosts.length === 0) {
-                postsList.innerHTML = `<li class="p-4 text-center text-gray-500 text-sm">${allPostsCache.length === 0 ? 'No posts found.' : 'No posts match your search.'}</li>`;
+                postsList.innerHTML = `<li class="text-center p-4 text-gray-500 text-sm">${allPostsCache.length === 0 ? 'No notes found.' : 'No notes match your search.'}</li>`;
             } else {
-                 postsList.innerHTML = paginatedPosts.map(post => {
-                    const postDate = new Date(post.name.substring(0, 10));
-                    const dateString = isNaN(postDate) ? '' : postDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    
-                    return `
-                    <li class="note-item p-4 cursor-pointer border-b border-gray-200" data-path="${post.path}">
-                        <div class="note-title font-semibold truncate">${post.name}</div>
-                        <div class="note-date text-sm text-gray-500">${dateString}</div>
-                    </li>`;
-                }).join('');
+                 postsList.innerHTML = paginatedPosts.map(post => `
+                    <li class="p-4 flex justify-between items-center">
+                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="font-medium truncate pr-4" title="${post.name}">${post.name}</a>
+                        <button onclick="handleEditClick('${post.path}')" class="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">Edit</button>
+                    </li>`).join('');
             }
-            
-            postsList.querySelectorAll('.note-item').forEach(item => {
-                item.addEventListener('click', () => handleEditClick(item.dataset.path, item));
-            });
-            
+
             if (totalPages > 1) {
                 paginationControls.classList.remove('hidden');
                 pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
@@ -350,11 +384,11 @@
         }
         
         async function fetchPosts() {
-            postsLoader.textContent = 'Loading...';
+            postsLoader.textContent = 'Loading notes...';
             postsError.textContent = '';
             try {
                 const response = await fetch('/api/get-posts');
-                if (!response.ok) throw new Error('Failed to fetch posts.');
+                if (!response.ok) throw new Error('Failed to fetch notes from server.');
                 const result = await response.json();
                 allPostsCache = result.posts;
                 currentPage = 1;
@@ -366,19 +400,17 @@
             }
         }
 
-        async function handleEditClick(path, element) {
-            if (editState.selectedElement) {
-                editState.selectedElement.classList.remove('selected');
-            }
-            element.classList.add('selected');
-            
-            messageBox.textContent = 'Fetching post...';
+        async function handleEditClick(path) {
+            messageBox.textContent = 'Fetching note...';
+            messageBox.className = 'mt-4 text-center text-sm text-gray-500';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             
             const response = await fetch(`/api/get-post-content?path=${encodeURIComponent(path)}`);
             const responseText = await response.text();
             
             if (!response.ok) {
                 messageBox.textContent = `Error: ${responseText}`;
+                messageBox.className = 'mt-4 text-center text-sm text-red-500';
                 return;
             }
 
@@ -391,24 +423,24 @@
 
                 titleInput.value = titleMatch ? titleMatch[1] : '';
                 contentInput.value = mainContent;
-                editState = { path, sha: result.sha, selectedElement: element };
+                editState = { path: path, sha: result.sha };
                 
-                buttonText.textContent = 'Update Post';
+                document.querySelector('h1').textContent = 'Editing Note';
+                buttonText.textContent = 'Update Note';
                 cancelEditButton.classList.remove('hidden');
-                messageBox.textContent = 'Editing post. To change image, add a new one.';
-                clearAttachment();
+                messageBox.textContent = 'Editing note. To change image, add a new one.';
+                clearAttachment(); // Clear any existing attachments when editing
             } catch (error) {
                  messageBox.textContent = `Error parsing post content: ${error.message}`;
+                 messageBox.className = 'mt-4 text-center text-sm text-red-500';
             }
         }
         
         function resetFormAndState() {
             form.reset();
-            if (editState.selectedElement) {
-                 editState.selectedElement.classList.remove('selected');
-            }
-            editState = { path: null, sha: null, selectedElement: null };
-            buttonText.textContent = 'Publish';
+            editState = { path: null, sha: null };
+            document.querySelector('h1').textContent = 'New Note';
+            buttonText.textContent = 'Save Note';
             cancelEditButton.classList.add('hidden');
             clearAttachment();
             drawHistory = [];
@@ -417,81 +449,162 @@
             loadShortcode();
         }
         
-        // ... (the rest of the JS functions: savePassword, loadPassword, getBase64, handleFormSubmit, etc.)
-        function savePassword() { if (savePasswordCheckbox.checked) localStorage.setItem('post_dashboard_password', passwordInput.value); else localStorage.removeItem('post_dashboard_password'); }
-        function loadPassword() { const savedPassword = localStorage.getItem('post_dashboard_password'); if (savedPassword) { passwordInput.value = savedPassword; savePasswordCheckbox.checked = true; } }
+        function savePassword() {
+            if (savePasswordCheckbox.checked) localStorage.setItem('post_dashboard_password', passwordInput.value);
+            else localStorage.removeItem('post_dashboard_password');
+        }
+
+        function loadPassword() {
+            const savedPassword = localStorage.getItem('post_dashboard_password');
+            if (savedPassword) {
+                passwordInput.value = savedPassword;
+                savePasswordCheckbox.checked = true;
+            }
+        }
+
         function saveImagePath() { localStorage.setItem('post_dashboard_image_path', imagePathInput.value); }
         function loadImagePath() { imagePathInput.value = localStorage.getItem('post_dashboard_image_path') || 'assets/img'; }
         function saveShortcode() { localStorage.setItem('post_dashboard_shortcode', imageShortcodeInput.value); }
         function loadShortcode() { imageShortcodeInput.value = localStorage.getItem('post_dashboard_shortcode') || '{{< img src="/img/IMAGE_NAME" >}}'; }
-        function getBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = () => resolve(reader.result); reader.onerror = error => reject(error); }); }
-
+        
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+        
         async function handleFormSubmit(e) {
             e.preventDefault();
-            savePassword(); saveImagePath(); saveShortcode();
+            savePassword();
+            saveImagePath();
+            saveShortcode();
             messageBox.textContent = '';
             submitButton.disabled = true;
-            buttonText.textContent = editState.sha ? 'Updating...' : 'Publishing...';
+            buttonText.textContent = editState.sha ? 'Updating...' : 'Saving...';
 
-            let imageData = null, imageName = null;
+            let imageData = null;
+            let imageName = null;
+
             try {
-                if (currentAttachment === 'drawing') { imageData = localStorage.getItem('savedCanvas'); imageName = `drawing-${Date.now()}.png`; } 
-                else if (currentAttachment === 'file' && imageInput.files[0]) { imageData = await getBase64(imageInput.files[0]); imageName = imageInput.files[0].name; }
+                if (currentAttachment === 'drawing') {
+                    imageData = localStorage.getItem('savedCanvas');
+                    imageName = `drawing-${Date.now()}.png`;
+                } else if (currentAttachment === 'file' && imageInput.files[0]) {
+                    imageData = await getBase64(imageInput.files[0]);
+                    imageName = imageInput.files[0].name;
+                }
             } catch (error) {
                 messageBox.textContent = `Error: Could not read image file.`;
+                messageBox.className = 'mt-4 text-center text-sm text-red-500';
                 submitButton.disabled = false;
-                buttonText.textContent = editState.sha ? 'Update Post' : 'Publish';
+                buttonText.textContent = editState.sha ? 'Update Note' : 'Save Note';
                 return;
             }
             
+            let finalResult;
             try {
-                let currentSha = editState.sha, newShortcode = '';
+                let currentSha = editState.sha;
+                let newShortcode = '';
+                
                 if (imageData && imageName) {
                     buttonText.textContent = 'Uploading image...';
-                    const imageResponse = await fetch('/api/upload-image', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: passwordInput.value, imageData, imageName, imagePath: imagePathInput.value }) });
+                    const imageResponse = await fetch('/api/upload-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            password: passwordInput.value, imageData, imageName, imagePath: imagePathInput.value
+                        }),
+                    });
                     const imageResultText = await imageResponse.text();
                     if (!imageResponse.ok) throw new Error(`Image upload failed: ${imageResultText}`);
                     const imageResult = JSON.parse(imageResultText);
+
                     newShortcode = imageShortcodeInput.value.replace('IMAGE_NAME', imageResult.uniqueImageName);
+                    
                     if (currentSha) {
                         await new Promise(resolve => setTimeout(resolve, 3000));
                         const shaResponse = await fetch(`/api/get-post-content?path=${encodeURIComponent(editState.path)}`);
-                        if (!shaResponse.ok) throw new Error('Could not refetch post SHA.');
+                        if (!shaResponse.ok) throw new Error('Could not refetch post SHA after image upload.');
                         const shaResult = await shaResponse.json();
                         currentSha = shaResult.sha;
                     }
                 }
 
-                buttonText.textContent = currentSha ? 'Updating post...' : 'Publishing post...';
+                buttonText.textContent = currentSha ? 'Updating note...' : 'Saving note...';
                 const finalContent = newShortcode ? `${newShortcode}\n\n${contentInput.value}` : contentInput.value;
-                const postResponse = await fetch('/api/create-post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: titleInput.value, content: finalContent, password: passwordInput.value, client_iso_date: new Date().toISOString(), sha: currentSha, path: editState.path }) });
+
+                const postResponse = await fetch('/api/create-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: titleInput.value, content: finalContent, password: passwordInput.value,
+                        client_iso_date: new Date().toISOString(), sha: currentSha, path: editState.path,
+                    }),
+                });
+                
                 const postResultText = await postResponse.text();
-                if (!postResponse.ok) throw new Error(`Post creation failed: ${postResultText}`);
-                const finalResult = JSON.parse(postResultText);
+                if (!postResponse.ok) throw new Error(`Post creation failed. Server responded with: ${postResultText}`);
+                finalResult = JSON.parse(postResultText);
 
                 messageBox.textContent = `Success! ${finalResult.message}`;
+                messageBox.className = 'mt-4 text-center text-sm text-green-600';
                 resetFormAndState();
                 await fetchPosts();
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
+                messageBox.className = 'mt-4 text-center text-sm text-red-500';
             } finally {
                 submitButton.disabled = false;
-                buttonText.textContent = editState.sha ? 'Update Post' : 'Publish';
+                buttonText.textContent = editState.sha ? 'Update Note' : 'Save Note';
             }
         }
-
+        
         // --- Event Listeners ---
         form.addEventListener('submit', handleFormSubmit);
         cancelEditButton.addEventListener('click', resetFormAndState);
-        searchInput.addEventListener('input', () => { currentPage = 1; renderPosts(); });
+        searchInput.addEventListener('input', () => {
+            currentPage = 1;
+            renderPosts();
+        });
+
+        // Attachment Listeners
         clearAttachmentButton.addEventListener('click', clearAttachment);
-        imageInput.addEventListener('change', async (e) => { if (e.target.files && e.target.files[0]) { const dataUrl = await getBase64(e.target.files[0]); showAttachmentPreview(dataUrl, 'file'); } });
+        imageInput.addEventListener('change', async (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const dataUrl = await getBase64(file);
+                showAttachmentPreview(dataUrl, 'file');
+            }
+        });
+
+        // Popup and Canvas Listeners
         openDrawPopupButton.addEventListener('click', openPopup);
         cancelDrawButton.addEventListener('click', closePopup);
         undoButton.addEventListener('click', undoLast);
-        saveDrawButton.addEventListener('click', () => { const dataUrl = canvas.toDataURL('image/png'); localStorage.setItem('savedCanvas', dataUrl); showAttachmentPreview(dataUrl, 'drawing'); closePopup(); });
-        prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPosts(); } });
-        nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; renderPosts(); } });
+        saveDrawButton.addEventListener('click', () => {
+            const dataUrl = canvas.toDataURL('image/png');
+            localStorage.setItem('savedCanvas', dataUrl);
+            showAttachmentPreview(dataUrl, 'drawing');
+            closePopup();
+        });
+
+        // Pagination Listeners
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPosts();
+            }
+        });
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPosts();
+            }
+        });
+
         colorPicker.addEventListener('input', (e) => ctx.strokeStyle = e.target.value);
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
@@ -503,7 +616,11 @@
 
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadPassword(); loadImagePath(); loadShortcode(); fetchPosts(); setupColorPalette();
+            loadPassword();
+            loadImagePath();
+            loadShortcode();
+            fetchPosts();
+            setupColorPalette();
         });
     </script>
 </body>
