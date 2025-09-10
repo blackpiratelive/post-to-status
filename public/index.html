@@ -41,7 +41,7 @@
         .popup-content {
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .popup-overlay.show .popup-content {
+        .show .popup-content {
             transform: translateY(0);
         }
     </style>
@@ -80,12 +80,10 @@
                 
                 <div id="attachment-buttons" class="flex items-center gap-4">
                     <button type="button" id="open-draw-popup" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition">Draw Picture</button>
-                    <div class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition relative">
-                        <label for="image-input" class="cursor-pointer">
-                            Upload Image
-                        </label>
-                         <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    </div>
+                    <label for="image-input" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition cursor-pointer relative">
+                        Upload Image
+                        <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    </label>
                 </div>
             </div>
 
@@ -130,6 +128,11 @@
                     <ul id="posts-list" class="divide-y divide-gray-200"></ul>
                     <div id="posts-loader" class="text-center p-4 text-gray-500 text-sm"></div>
                     <div id="posts-error" class="text-center p-4 text-red-500 text-sm"></div>
+                </div>
+                <div id="pagination-controls" class="hidden flex justify-between items-center p-4 border-t border-gray-200">
+                    <button id="prev-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <span id="page-indicator" class="text-sm text-gray-500"></span>
+                    <button id="next-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
                 </div>
             </div>
         </section>
@@ -198,6 +201,12 @@
         const undoButton = document.getElementById('undo-button');
         const colorPalette = document.getElementById('color-palette');
         
+        // Pagination
+        const paginationControls = document.getElementById('pagination-controls');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const pageIndicator = document.getElementById('page-indicator');
+
         // --- State Variables ---
         let allPostsCache = [];
         let editState = { path: null, sha: null };
@@ -206,6 +215,9 @@
         let lastY = 0;
         let drawHistory = [];
         let currentAttachment = null; // Can be 'file' or 'drawing'
+        let currentPage = 1;
+        const postsPerPage = 10;
+        let totalPages = 1;
 
         // --- Attachment & Preview Functions ---
         function showAttachmentPreview(src, type) {
@@ -318,20 +330,24 @@
 
         // --- Popup Functions ---
         function openPopup() {
-            drawPopup.classList.add('show'); // FIX: Add .show class to trigger animation
-            drawPopup.classList.remove('invisible');
+            drawPopup.classList.add('show');
+            drawPopup.classList.remove('invisible', 'opacity-0');
+            drawPopup.classList.add('opacity-100');
             document.body.style.overflow = 'hidden';
             setTimeout(() => {
                 resizeCanvas();
-                if (drawHistory.length === 0) { // If it's the first time opening or it was cleared
-                    saveHistory(); // Save the initial blank state
+                if (drawHistory.length === 0) {
+                    saveHistory();
                 }
-            }, 50); // Small delay to allow CSS transition
+            }, 50);
         }
         
         function closePopup() {
-            drawPopup.classList.remove('show'); // FIX: Remove .show class
-            drawPopup.classList.add('invisible');
+            drawPopup.classList.remove('show', 'opacity-100');
+            drawPopup.classList.add('opacity-0');
+            setTimeout(() => {
+                drawPopup.classList.add('invisible');
+            }, 300); // Match animation duration
             document.body.style.overflow = '';
         }
 
@@ -341,14 +357,29 @@
             let filteredPosts = allPostsCache.filter(post => post.name.toLowerCase().includes(searchTerm));
             filteredPosts.sort((a, b) => b.name.localeCompare(a.name));
             
-            if (filteredPosts.length === 0) {
+            totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages > 0 ? totalPages : 1;
+            const start = (currentPage - 1) * postsPerPage;
+            const end = start + postsPerPage;
+            const paginatedPosts = filteredPosts.slice(start, end);
+
+            if (paginatedPosts.length === 0) {
                 postsList.innerHTML = `<li class="text-center p-4 text-gray-500 text-sm">${allPostsCache.length === 0 ? 'No notes found.' : 'No notes match your search.'}</li>`;
             } else {
-                 postsList.innerHTML = filteredPosts.map(post => `
+                 postsList.innerHTML = paginatedPosts.map(post => `
                     <li class="p-4 flex justify-between items-center">
                         <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="font-medium truncate pr-4" title="${post.name}">${post.name}</a>
                         <button onclick="handleEditClick('${post.path}')" class="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">Edit</button>
                     </li>`).join('');
+            }
+
+            if (totalPages > 1) {
+                paginationControls.classList.remove('hidden');
+                pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+                prevButton.disabled = currentPage === 1;
+                nextButton.disabled = currentPage === totalPages;
+            } else {
+                paginationControls.classList.add('hidden');
             }
         }
         
@@ -360,6 +391,7 @@
                 if (!response.ok) throw new Error('Failed to fetch notes from server.');
                 const result = await response.json();
                 allPostsCache = result.posts;
+                currentPage = 1;
                 renderPosts();
             } catch (error) {
                 postsError.textContent = `Error: ${error.message}`;
@@ -533,7 +565,10 @@
         // --- Event Listeners ---
         form.addEventListener('submit', handleFormSubmit);
         cancelEditButton.addEventListener('click', resetFormAndState);
-        searchInput.addEventListener('input', renderPosts);
+        searchInput.addEventListener('input', () => {
+            currentPage = 1;
+            renderPosts();
+        });
 
         // Attachment Listeners
         clearAttachmentButton.addEventListener('click', clearAttachment);
@@ -554,6 +589,20 @@
             localStorage.setItem('savedCanvas', dataUrl);
             showAttachmentPreview(dataUrl, 'drawing');
             closePopup();
+        });
+
+        // Pagination Listeners
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPosts();
+            }
+        });
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPosts();
+            }
         });
 
         colorPicker.addEventListener('input', (e) => ctx.strokeStyle = e.target.value);
