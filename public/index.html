@@ -318,8 +318,8 @@
 
         // --- Popup Functions ---
         function openPopup() {
+            drawPopup.classList.add('show'); // FIX: Add .show class to trigger animation
             drawPopup.classList.remove('invisible');
-            drawPopup.classList.add('opacity-100');
             document.body.style.overflow = 'hidden';
             setTimeout(() => {
                 resizeCanvas();
@@ -330,7 +330,7 @@
         }
         
         function closePopup() {
-            drawPopup.classList.remove('opacity-100');
+            drawPopup.classList.remove('show'); // FIX: Remove .show class
             drawPopup.classList.add('invisible');
             document.body.style.overflow = '';
         }
@@ -346,7 +346,7 @@
             } else {
                  postsList.innerHTML = filteredPosts.map(post => `
                     <li class="p-4 flex justify-between items-center">
-                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="font-medium truncate pr-4" title="${post.name}">${post.name.replace(/\.md$/, '').replace(/^\d{4}-\d{2}-\d{2}-/, '')}</a>
+                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="font-medium truncate pr-4" title="${post.name}">${post.name}</a>
                         <button onclick="handleEditClick('${post.path}')" class="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">Edit</button>
                     </li>`).join('');
             }
