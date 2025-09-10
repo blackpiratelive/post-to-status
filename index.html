@@ -345,6 +345,7 @@
                 if (!response.ok) throw new Error('Could not fetch note content.');
                 const result = await response.json();
 
+                // --- FIX: Correctly parse the raw markdown content ---
                 const contentParts = result.content.split('---');
                 const frontmatter = contentParts[1] || '';
                 const mainContent = contentParts.slice(2).join('---').trim();
@@ -370,6 +371,7 @@
             formTitle.textContent = 'New Note';
             buttonText.textContent = 'Save Note';
             cancelEditButton.classList.add('hidden');
+            imageInput.value = ''; // Clear file input
             clearCanvas();
             loadPassword();
             loadImagePath();
@@ -414,7 +416,7 @@
             saveShortcode();
             messageBox.textContent = '';
             submitButton.disabled = true;
-            buttonText.textContent = editState.sha ? 'Updating...' : 'Saving...';
+            buttonText.textContent = editState.sha ? 'Updating...' : 'Publishing...';
 
             let imageData = null;
             let imageName = null;
@@ -432,6 +434,7 @@
                 messageBox.textContent = `Error: Could not read image file.`;
                 messageBox.className = 'p-4 text-center font-medium text-red-600';
                 submitButton.disabled = false;
+                buttonText.textContent = editState.sha ? 'Update Note' : 'Save Note';
                 return;
             }
             
@@ -445,14 +448,28 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            password: passwordInput.value, imageData, imageName,
+                            password: passwordInput.value,
+                            imageData,
+                            imageName,
                             imagePath: imagePathInput.value
                         }),
                     });
+
+                    // --- FIX: Robust error handling for non-JSON responses ---
+                    if (!imageResponse.ok) {
+                        const errorText = await imageResponse.text();
+                        try {
+                           const errorJson = JSON.parse(errorText);
+                           throw new Error(errorJson.error || `Image upload failed: ${imageResponse.statusText}`);
+                        } catch (parseError) {
+                           throw new Error(`Image upload failed. Server responded with: ${errorText}`);
+                        }
+                    }
+
                     const imageResult = await imageResponse.json();
-                    if (!imageResponse.ok) throw new Error(imageResult.error || 'Image upload failed.');
                     messageBox.textContent = 'Image uploaded. Preparing post...';
                     newShortcode = imageShortcodeInput.value.replace('IMAGE_NAME', imageResult.uniqueImageName);
+                    
                     if (currentSha) {
                         await new Promise(resolve => setTimeout(resolve, 3000));
                         const shaResponse = await fetch(`/api/get-post-content?path=${encodeURIComponent(editState.path)}`);
@@ -462,21 +479,35 @@
                     }
                 }
 
-                buttonText.textContent = currentSha ? 'Updating note...' : 'Saving note...';
+                buttonText.textContent = currentSha ? 'Updating post...' : 'Publishing post...';
                 const finalContent = newShortcode ? `${newShortcode}\n\n${contentInput.value}` : contentInput.value;
 
                 const postResponse = await fetch('/api/create-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        title: titleInput.value, content: finalContent, password: passwordInput.value,
-                        client_iso_date: new Date().toISOString(), sha: currentSha, path: editState.path,
+                        title: titleInput.value,
+                        content: finalContent,
+                        password: passwordInput.value,
+                        client_iso_date: new Date().toISOString(),
+                        sha: currentSha,
+                        path: editState.path,
                     }),
                 });
                 
-                const postResult = await postResponse.json();
-                if (!postResponse.ok) throw new Error(postResult.error || 'An unknown error occurred.');
+                 // --- FIX: Robust error handling for non-JSON responses ---
+                if (!postResponse.ok) {
+                    const errorText = await postResponse.text();
+                    try {
+                       const errorJson = JSON.parse(errorText);
+                       throw new Error(errorJson.error || `Post creation failed: ${postResponse.statusText}`);
+                    } catch (parseError) {
+                       throw new Error(`Post creation failed. Server responded with: ${errorText}`);
+                    }
+                }
 
+                const postResult = await postResponse.json();
+                
                 messageBox.textContent = `Success! ${postResult.message}`;
                 messageBox.className = 'p-4 text-center font-medium text-green-600';
                 resetFormAndState();
