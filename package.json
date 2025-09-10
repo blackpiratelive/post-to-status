@@ -4,7 +4,7 @@
   "description": "Dashboard to post status updates.",
   "main": "index.js",
   "scripts": {
-    "vercel-build": "tailwindcss -i ./styles/input.css -o ./styles/tailwind.css --minify"
+    "vercel-build": "tailwindcss -i ./styles/input.css -o /public/styles/tailwind.css --minify"
   },
   "keywords": [],
   "author": "",
