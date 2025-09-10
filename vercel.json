@@ -5,8 +5,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "installCommand": "npm install",
-        "buildCommand": "npm run build:css"
+        "outputDirectory": "public"
       }
     },
     {
@@ -16,16 +15,12 @@
   ],
   "routes": [
     {
-      "src": "/styles/(.*)",
-      "dest": "/styles/$1"
-    },
-    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
-      "src": "/(.*\\.(html|js|css|ico|png|jpg|svg))",
-      "dest": "/$1"
+      "src": "/styles/(.*)",
+      "dest": "/styles/$1"
     },
     {
       "src": "/(.*)",
@@ -33,3 +28,4 @@
     }
   ]
 }
+
