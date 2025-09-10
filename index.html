@@ -2,217 +2,163 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Post Dashboard</title>
+    <link href="/styles/tailwind.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
     <style>
-        /* --- Brutalist Theme --- */
-        *, *::before, *::after {
-            box-sizing: border-box; /* THE FIX: Prevents horizontal scroll */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fdf6e3; /* Paper-like background */
         }
-        body { 
-            background-color: #ffffff; 
-            color: #000000;
-            font-family: 'Courier New', Courier, monospace;
-            -webkit-font-smoothing: none;
-            -moz-osx-font-smoothing: grayscale;
-            padding: 1rem; /* Adjusted for mobile first */
+        .font-kalam {
+            font-family: 'Kalam', cursive;
         }
-
-        /* --- Layout --- */
-        .container {
-            width: 100%;
-            max-width: 42rem;
-            margin: auto;
-            border: 2px solid #000;
-            padding: 1rem; /* Adjusted for mobile first */
+        input, textarea {
+            caret-color: #ffcc00;
         }
-        .section {
-            margin-bottom: 3rem;
-        }
-        hr {
-            border: none;
-            border-top: 2px solid #000;
-            margin: 3rem 0;
-        }
-
-        /* --- Typography --- */
-        h1 { font-size: 2rem; font-weight: bold; text-transform: uppercase; } /* Adjusted for mobile */
-        h2 { font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; text-transform: uppercase; } /* Adjusted for mobile */
-        p { font-size: 1rem; color: #000; margin-top: 0.5rem; }
-        label { display: block; font-size: 1rem; font-weight: bold; margin-bottom: 0.5rem; }
-        .label-note { font-size: 0.8rem; color: #000; }
-
-        /* --- Form Elements --- */
-        .form-header { text-align: center; margin-bottom: 2rem; }
-        .form-group { margin-bottom: 1.5rem; }
-        input[type="text"], input[type="password"], textarea, input[type="search"], input[type="file"], input[type="color"] {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: #fff;
-            border: 2px solid #000;
-            font-size: 1rem;
-            color: #000;
-            border-radius: 0;
-            -webkit-appearance: none;
-        }
-        input[type="file"] { padding: 0.4rem; }
-        input[type="color"] { padding: 0.1rem; height: 45px; }
         input:focus, textarea:focus {
-            outline: 2px solid #0000ff;
-            outline-offset: 2px;
+            outline: none;
         }
-        textarea { resize: vertical; min-height: 150px; }
-        .checkbox-group { display: flex; align-items: center; margin-top: 0.5rem; }
-        .checkbox-group label { margin-left: 0.5rem; font-weight: normal; }
-        
-        /* Image Preview & Canvas */
-        .image-preview-container { margin-top: 1rem; display: none; }
-        #image-preview { max-width: 100%; border: 2px solid #000; }
-        #drawing-canvas { border: 2px solid #000; cursor: crosshair; background-color: #fff; }
-        .drawing-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; gap: 1rem; }
-        
-        /* --- Buttons --- */
-        button {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            font-weight: bold;
-            border: 2px solid #000;
-            cursor: pointer;
-            background-color: #fff;
-            color: #000;
-            border-radius: 0;
-            text-transform: uppercase;
+        input[type="file"] { color: transparent; }
+        input[type="file"]::before {
+            content: 'Choose File'; display: inline-block; background: #fff; color: #d97706; /* amber-500 */
+            border-radius: 0.5rem; padding: 0.25rem 0.75rem; outline: none; white-space: nowrap;
+            -webkit-user-select: none; cursor: pointer; font-weight: 500; font-size: 0.875rem;
+            border: 1px solid #f3e8d3;
         }
-        button:hover:not(:disabled) { background-color: #ffff00; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; background-color: #ccc; }
-        .btn-primary, .btn-secondary, .btn-edit { width: auto; }
-        .btn-primary { background-color: #ffff00; }
-        .btn-primary:hover:not(:disabled) { background-color: #fff; }
-        .button-group { display: flex; flex-direction: column; gap: 1rem; }
-
-        /* --- Utilities & Components --- */
-        .controls-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
         
-        .posts-list { list-style: none; }
-        .post-item { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 2px solid #000; margin-bottom: 0.5rem; }
-        .post-link { font-size: 1rem; color: #0000ff; text-decoration: underline; }
-        
-        .pagination-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; }
-        
-        .message-box { margin-top: 1.5rem; text-align: center; font-weight: bold; }
-        .message-success { color: #008000; }
-        .message-error { color: #ff0000; }
-        .message-info { color: #0000ff; }
-
-        .loader { display: none; } /* Loader removed for simplicity */
+        /* Popup animation styles */
+        .popup-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0s 0.3s;
+        }
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease, visibility 0s 0s;
+        }
+        .popup-content {
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .popup-overlay.show .popup-content {
+            transform: translateY(0);
+        }
         .hidden { display: none; }
-
-        /* ** NEW ** -- Media Query for Larger Screens */
-        @media (min-width: 768px) {
-            body {
-                padding: 2rem 1rem;
-            }
-            .container {
-                padding: 2rem;
-            }
-            h1 {
-                font-size: 2.5rem;
-            }
-            h2 {
-                font-size: 2rem;
-            }
-            .controls-container {
-                flex-direction: row;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container max-w-xl mx-auto p-4">
         <!-- Posting Form Section -->
-        <div id="form-section" class="section">
-            <div class="form-header">
-                <h1 id="form-title">Post Something</h1>
-            </div>
+        <div id="form-section" class="mb-8">
+            <h1 id="form-title" class="font-kalam text-4xl text-center my-6 text-amber-900">New Note</h1>
+            
             <form id="post-form">
-                <div class="form-group">
-                    <label for="title">Title</label>
-                    <input type="text" id="title" placeholder="Post Title (Optional)">
-                </div>
-                <div class="form-group">
-                    <label for="content">Content</label>
-                    <textarea id="content" required placeholder="Markdown content..."></textarea>
-                </div>
-
-                <div class="drawing-section">
-                    <label>Draw Picture</label>
-                    <canvas id="drawing-canvas"></canvas>
-                    <div class="drawing-controls">
-                        <div>
-                            <label for="color-picker" style="font-size: 0.8rem; margin-bottom: 0.2rem;">Color</label>
-                            <input type="color" id="color-picker" value="#000000">
-                        </div>
-                        <button type="button" id="clear-canvas-btn">Clear</button>
+                <!-- Main Note Area -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-yellow-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="title" placeholder="Title" class="w-full bg-transparent border-none text-2xl font-bold focus:ring-0 p-0 placeholder-gray-400">
+                    </div>
+                    <div class="p-4">
+                        <textarea id="content" required placeholder="Start writing..." class="w-full bg-transparent border-none text-base focus:ring-0 p-0 resize-y min-h-[150px] placeholder-gray-500"></textarea>
                     </div>
                 </div>
 
-                 <div class="form-group">
-                    <label for="image">Or Upload Image</label>
-                    <input type="file" id="image-input" accept="image/*">
-                    <div class="image-preview-container" id="image-preview-container">
-                        <img id="image-preview" src="#" alt="Image preview">
+                <!-- Attachments & Config in a separate card -->
+                 <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-yellow-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <button type="button" id="open-draw-popup" class="flex items-center gap-3 w-full text-left text-base text-amber-600 font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                            Draw Picture
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <label class="flex items-center gap-3 text-base text-amber-600 font-medium mb-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
+                            Upload Image
+                        </label>
+                        <input type="file" id="image-input" accept="image/*" class="mt-1">
                     </div>
                 </div>
-                 <div class="form-group">
-                    <label for="image-path-input">Image Path</label>
-                    <input type="text" id="image-path-input" placeholder="/assets/img">
-                </div>
-                <div class="form-group">
-                    <label for="image-shortcode-input">Shortcode Template</label>
-                    <div class="label-note">Use IMAGE_NAME as placeholder</div>
-                    <input type="text" id="image-shortcode-input" placeholder="{{< img src=`/img/IMAGE_NAME` >}}">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="save-password">
-                        <label for="save-password">Save Password</label>
+
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6 border border-yellow-200">
+                     <div class="p-4 border-b border-gray-200">
+                        <label for="image-path-input" class="text-sm font-medium mb-1 block text-gray-500">Image Path</label>
+                        <input type="text" id="image-path-input" placeholder="/assets/img" class="w-full bg-transparent border-none text-base focus:ring-0 p-0">
+                    </div>
+                    <div class="p-4">
+                        <label for="image-shortcode-input" class="text-sm font-medium mb-1 block text-gray-500">Shortcode</label>
+                        <input type="text" id="image-shortcode-input" placeholder="{{< img src=`/img/IMAGE_NAME` >}}" class="w-full bg-transparent border-none text-base focus:ring-0 p-0">
                     </div>
                 </div>
-                <div class="button-group">
-                    <button type="submit" id="submit-button" class="btn-primary">
-                        <span id="button-text">Push to GitHub</span>
+                
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-yellow-200">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="password" id="password" required placeholder="Password" class="w-full bg-transparent border-none text-base focus:ring-0 p-0">
+                    </div>
+                    <div class="flex items-center p-4">
+                        <input type="checkbox" id="save-password" class="h-4 w-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500">
+                        <label for="save-password" class="ml-3 text-base">Save Password</label>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" id="submit-button" class="w-full bg-yellow-400 text-yellow-900 font-bold py-3 px-4 rounded-lg disabled:bg-gray-200 disabled:text-gray-500 transition-colors shadow-sm hover:bg-yellow-500">
+                        <span id="button-text">Save Note</span>
                     </button>
-                    <button type="button" id="cancel-edit-button" class="btn-secondary hidden">
+                    <button type="button" id="cancel-edit-button" class="hidden w-full bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg mt-4 transition-colors">
                         Cancel Edit
                     </button>
                 </div>
             </form>
-            <div id="message-box" class="message-box"></div>
+            <div id="message-box" class="p-4 text-center font-medium"></div>
         </div>
 
-        <hr>
-
         <!-- Previous Posts Section -->
-        <div id="posts-section" class="section">
-            <h2>Previous Posts</h2>
-            <div class="controls-container">
-                <input type="search" id="search-input" placeholder="Search..." style="flex-grow: 1;">
-                <button id="sort-button">Sort: Newest</button>
+        <div id="posts-section" class="mb-8">
+            <h2 class="font-kalam text-3xl text-center mb-4 text-amber-900">Notes</h2>
+             <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-yellow-200">
+                <div class="p-2 border-b border-gray-200">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                             <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                        </div>
+                        <input type="search" id="search-input" placeholder="Search" class="w-full bg-gray-100 border-none rounded-lg text-base focus:ring-2 focus:ring-yellow-400 p-2 pl-10">
+                    </div>
+                </div>
+                <ul id="posts-list"></ul>
+                <div id="posts-loader" class="p-4 text-center font-medium text-gray-500"></div>
+                <div id="posts-error" class="p-4 text-center font-medium text-red-600"></div>
+             </div>
+             <div id="pagination-controls" class="flex justify-between items-center p-2">
+                 <button id="prev-button" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg disabled:opacity-50">Prev</button>
+                <span id="page-indicator" class="text-sm text-gray-500"></span>
+                <button id="next-button" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg disabled:opacity-50">Next</button>
             </div>
-            <div>
-                <ul id="posts-list" class="posts-list"></ul>
-                <div id="posts-loader" class="message-box message-info"></div>
-                <div id="posts-error" class="message-box message-error"></div>
+        </div>
+    </div>
+    
+    <!-- Drawing Popup -->
+    <div id="draw-popup" class="popup-overlay fixed inset-0 bg-black/40">
+        <div class="popup-content absolute bottom-0 left-0 w-full h-full bg-gray-100 flex flex-col">
+            <div class="popup-header flex justify-between items-center p-4 bg-white border-b border-gray-200 flex-shrink-0">
+                <button id="cancel-draw-button" class="text-amber-600">Cancel</button>
+                <h3 class="font-semibold">Draw</h3>
+                <button id="save-draw-button" class="text-amber-600 font-semibold">Save</button>
             </div>
-            <div id="pagination-controls" class="pagination-controls">
-                 <button id="prev-button" class="btn-secondary">Prev</button>
-                <span id="page-indicator"></span>
-                <button id="next-button" class="btn-secondary">Next</button>
+            <div class="popup-body flex-grow p-4">
+                <canvas id="drawing-canvas" class="w-full h-full bg-white rounded-lg border border-gray-300"></canvas>
+            </div>
+             <div class="popup-footer flex justify-between items-center p-4 bg-white border-t border-gray-200 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <label for="color-picker" class="text-sm">Color</label>
+                    <input type="color" id="color-picker" value="#000000" class="p-0 h-8 w-8 rounded-full border border-gray-300">
+                </div>
+                <button type="button" id="clear-canvas-btn" class="bg-gray-200 text-amber-600 font-semibold py-1 px-3 rounded-lg text-sm">Clear</button>
             </div>
         </div>
     </div>
@@ -230,8 +176,6 @@
         const formTitle = document.getElementById('form-title');
         const cancelEditButton = document.getElementById('cancel-edit-button');
         const imageInput = document.getElementById('image-input');
-        const imagePreviewContainer = document.getElementById('image-preview-container');
-        const imagePreview = document.getElementById('image-preview');
         const imagePathInput = document.getElementById('image-path-input');
         const imageShortcodeInput = document.getElementById('image-shortcode-input');
         const postsList = document.getElementById('posts-list');
@@ -242,7 +186,12 @@
         const nextButton = document.getElementById('next-button');
         const pageIndicator = document.getElementById('page-indicator');
         const searchInput = document.getElementById('search-input');
-        const sortButton = document.getElementById('sort-button');
+        
+        // Popup & Canvas Selectors
+        const drawPopup = document.getElementById('draw-popup');
+        const openDrawPopupButton = document.getElementById('open-draw-popup');
+        const cancelDrawButton = document.getElementById('cancel-draw-button');
+        const saveDrawButton = document.getElementById('save-draw-button');
         const canvas = document.getElementById('drawing-canvas');
         const ctx = canvas.getContext('2d');
         const colorPicker = document.getElementById('color-picker');
@@ -253,7 +202,6 @@
         let totalPages = 1;
         let allPostsCache = [];
         let editState = { path: null, sha: null };
-        let currentSort = 'newest';
         let isDrawing = false;
         let hasDrawn = false;
         let lastX = 0;
@@ -261,17 +209,20 @@
 
         // --- Canvas Functions ---
         function resizeCanvas() {
-            const savedDrawing = localStorage.getItem('savedCanvas');
-            const containerWidth = canvas.parentElement.clientWidth;
-            canvas.width = containerWidth;
-            canvas.height = containerWidth * 0.5;
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            if (savedDrawing) {
-                const img = new Image();
-                img.onload = () => ctx.drawImage(img, 0, 0);
-                img.src = savedDrawing;
-            }
+            loadCanvasState(); // Redraw after resize
         }
 
         function draw(e) {
@@ -283,7 +234,7 @@
             ctx.strokeStyle = colorPicker.value;
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.moveTo(lastX, lastY);
             ctx.lineTo(x, y);
@@ -311,7 +262,7 @@
             if (savedImage) {
                 const img = new Image();
                 img.onload = () => {
-                    ctx.drawImage(img, 0, 0);
+                    ctx.drawImage(img, 0, 0, canvas.clientWidth, canvas.clientHeight);
                     hasDrawn = true;
                 };
                 img.src = savedImage;
@@ -320,7 +271,6 @@
 
         function stopDrawing() { 
             isDrawing = false;
-            saveCanvasState();
         }
         
         function clearCanvas() {
@@ -330,27 +280,37 @@
             localStorage.removeItem('savedCanvas');
         }
 
+        // --- Popup Functions ---
+        function openPopup() {
+            drawPopup.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(resizeCanvas, 50);
+        }
+        
+        function closePopup() {
+            drawPopup.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
         // --- Main Functions ---
         function renderPosts() {
             const searchTerm = searchInput.value.toLowerCase();
             let filteredPosts = allPostsCache.filter(post => post.name.toLowerCase().includes(searchTerm));
-            if (currentSort === 'newest') {
-                filteredPosts.sort((a, b) => b.name.localeCompare(a.name));
-            } else {
-                filteredPosts.sort((a, b) => a.name.localeCompare(b.name));
-            }
+            filteredPosts.sort((a, b) => b.name.localeCompare(a.name));
+            
             const perPage = 20;
             totalPages = Math.ceil(filteredPosts.length / perPage);
             const start = (currentPage - 1) * perPage;
             const end = start + perPage;
             const paginatedPosts = filteredPosts.slice(start, end);
+
             if (paginatedPosts.length === 0) {
-                postsList.innerHTML = `<li style="text-align: center;">${allPostsCache.length === 0 ? 'No posts found.' : 'No posts match your search.'}</li>`;
+                postsList.innerHTML = `<li class="text-center p-4">${allPostsCache.length === 0 ? 'No notes found.' : 'No notes match your search.'}</li>`;
             } else {
                  postsList.innerHTML = paginatedPosts.map(post => `
-                    <li class="post-item">
-                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="post-link" title="${post.name}">${post.name}</a>
-                        <button onclick="handleEditClick('${post.path}')" class="btn-edit">Edit</button>
+                    <li class="flex justify-between items-center p-4 border-b border-gray-200 last:border-b-0">
+                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="text-base no-underline font-semibold" title="${post.name}">${post.name.replace(/\.md$/, '')}</a>
+                        <button onclick="handleEditClick('${post.path}')" class="text-sm py-1 px-3 rounded-lg bg-gray-200 text-gray-700 font-semibold">Edit</button>
                     </li>`).join('');
             }
             pageIndicator.textContent = `Page ${currentPage} of ${totalPages || 1}`;
@@ -360,7 +320,7 @@
         }
         
         async function fetchPosts() {
-            postsLoader.textContent = 'Loading posts...';
+            postsLoader.textContent = 'Loading notes...';
             postsError.textContent = '';
             try {
                 const response = await fetch('/api/get-posts');
@@ -377,33 +337,39 @@
         }
 
         async function handleEditClick(path) {
-            messageBox.textContent = 'Fetching post content...';
-            messageBox.className = 'message-box message-info';
-            form.scrollIntoView({ behavior: 'smooth' });
+            messageBox.textContent = 'Fetching note...';
+            messageBox.className = 'p-4 text-center font-medium text-gray-500';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             try {
                 const response = await fetch(`/api/get-post-content?path=${encodeURIComponent(path)}`);
-                if (!response.ok) throw new Error('Could not fetch post content.');
+                if (!response.ok) throw new Error('Could not fetch note content.');
                 const result = await response.json();
-                titleInput.value = result.title;
-                contentInput.value = result.content;
-                editState = { path: result.path, sha: result.sha };
-                formTitle.textContent = 'Editing Post';
-                buttonText.textContent = 'Update Post';
+
+                const contentParts = result.content.split('---');
+                const frontmatter = contentParts[1] || '';
+                const mainContent = contentParts.slice(2).join('---').trim();
+
+                const titleMatch = frontmatter.match(/title:\s*"(.*?)"/);
+                titleInput.value = titleMatch ? titleMatch[1] : '';
+                contentInput.value = mainContent;
+                
+                editState = { path: path, sha: result.sha };
+                formTitle.textContent = 'Editing Note';
+                buttonText.textContent = 'Update Note';
                 cancelEditButton.classList.remove('hidden');
-                messageBox.textContent = 'Editing. To change image, draw or select a new one.';
+                messageBox.textContent = '';
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
-                messageBox.className = 'message-box message-error';
+                messageBox.className = 'p-4 text-center font-medium text-red-600';
             }
         }
         
         function resetFormAndState() {
             form.reset();
             editState = { path: null, sha: null };
-            formTitle.textContent = 'Post Something';
-            buttonText.textContent = 'Push to GitHub';
+            formTitle.textContent = 'New Note';
+            buttonText.textContent = 'Save Note';
             cancelEditButton.classList.add('hidden');
-            imagePreviewContainer.style.display = 'none';
             clearCanvas();
             loadPassword();
             loadImagePath();
@@ -448,14 +414,15 @@
             saveShortcode();
             messageBox.textContent = '';
             submitButton.disabled = true;
-            buttonText.textContent = editState.sha ? 'Updating...' : 'Publishing...';
+            buttonText.textContent = editState.sha ? 'Updating...' : 'Saving...';
 
             let imageData = null;
             let imageName = null;
+            const savedDrawing = localStorage.getItem('savedCanvas');
 
             try {
-                if (hasDrawn) {
-                    imageData = canvas.toDataURL('image/png');
+                if (savedDrawing) {
+                    imageData = savedDrawing;
                     imageName = `drawing-${Date.now()}.png`;
                 } else if (imageInput.files[0]) {
                     imageData = await getBase64(imageInput.files[0]);
@@ -463,7 +430,7 @@
                 }
             } catch (error) {
                 messageBox.textContent = `Error: Could not read image file.`;
-                messageBox.className = 'message-box message-error';
+                messageBox.className = 'p-4 text-center font-medium text-red-600';
                 submitButton.disabled = false;
                 return;
             }
@@ -478,9 +445,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            password: passwordInput.value,
-                            imageData,
-                            imageName,
+                            password: passwordInput.value, imageData, imageName,
                             imagePath: imagePathInput.value
                         }),
                     });
@@ -497,19 +462,15 @@
                     }
                 }
 
-                buttonText.textContent = currentSha ? 'Updating post...' : 'Publishing post...';
+                buttonText.textContent = currentSha ? 'Updating note...' : 'Saving note...';
                 const finalContent = newShortcode ? `${newShortcode}\n\n${contentInput.value}` : contentInput.value;
 
                 const postResponse = await fetch('/api/create-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        title: titleInput.value,
-                        content: finalContent,
-                        password: passwordInput.value,
-                        client_iso_date: new Date().toISOString(),
-                        sha: currentSha,
-                        path: editState.path,
+                        title: titleInput.value, content: finalContent, password: passwordInput.value,
+                        client_iso_date: new Date().toISOString(), sha: currentSha, path: editState.path,
                     }),
                 });
                 
@@ -517,62 +478,49 @@
                 if (!postResponse.ok) throw new Error(postResult.error || 'An unknown error occurred.');
 
                 messageBox.textContent = `Success! ${postResult.message}`;
-                messageBox.className = 'message-box message-success';
+                messageBox.className = 'p-4 text-center font-medium text-green-600';
                 resetFormAndState();
                 await fetchPosts();
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
-                messageBox.className = 'message-box message-error';
+                messageBox.className = 'p-4 text-center font-medium text-red-600';
             } finally {
                 submitButton.disabled = false;
-                buttonText.textContent = editState.sha ? 'Update Post' : 'Push to GitHub';
-            }
-        });
-        
-        imageInput.addEventListener('change', () => {
-            if (imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    imagePreview.setAttribute('src', e.target.result);
-                    imagePreviewContainer.style.display = 'block';
-                }
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                imagePreviewContainer.style.display = 'none';
+                buttonText.textContent = editState.sha ? 'Update Note' : 'Save Note';
             }
         });
         
         cancelEditButton.addEventListener('click', resetFormAndState);
         searchInput.addEventListener('input', () => { currentPage = 1; renderPosts(); });
-        sortButton.addEventListener('click', () => {
-            currentSort = currentSort === 'newest' ? 'az' : 'newest';
-            sortButton.textContent = currentSort === 'newest' ? 'Sort: Newest' : 'Sort: A-Z';
-            currentPage = 1;
-            renderPosts();
-        });
         prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPosts(); } });
         nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; renderPosts(); } });
 
-        // --- Initial Load & Canvas Listeners ---
+        // Popup and Canvas Listeners
+        openDrawPopupButton.addEventListener('click', openPopup);
+        cancelDrawButton.addEventListener('click', closePopup);
+        saveDrawButton.addEventListener('click', () => {
+            saveCanvasState();
+            closePopup();
+        });
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+        clearCanvasBtn.addEventListener('click', clearCanvas);
+
+        // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             loadPassword();
             loadImagePath();
             loadShortcode();
             fetchPosts();
-            resizeCanvas();
-            loadCanvasState();
         });
         window.addEventListener('resize', resizeCanvas);
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-        canvas.addEventListener('touchstart', startDrawing);
-        canvas.addEventListener('touchmove', draw);
-        canvas.addEventListener('touchend', stopDrawing);
-        clearCanvasBtn.addEventListener('click', clearCanvas);
     </script>
 </body>
 </html>
-
 

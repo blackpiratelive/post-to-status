@@ -1,0 +1,15 @@
+{
+  "name": "post-to-status",
+  "version": "1.0.0",
+  "description": "Dashboard to post status updates.",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./styles/input.css -o ./styles/tailwind.css --minify"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}
