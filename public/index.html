@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Create Microblog Post</title>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Georgia', serif;
@@ -38,7 +38,7 @@
       color: #555;
     }
 
-    .form-section { margin-bottom:1.5rem; }
+    .form-section { margin-bottom: 1.5rem; }
 
     .section-label {
       font-family: 'Verdana', sans-serif;
@@ -46,15 +46,7 @@
       font-weight: bold;
       color: #a0522d;
       margin-bottom: 0.5rem;
-      display:block;
-    }
-
-    textarea, input[type="text"], input[type="password"] {
-      font-family: 'Verdana', sans-serif;
-      font-size: 0.8125rem;
-      padding: 0.5rem;
-      border: 1px solid #333;
-      width: 100%;
+      display: block;
     }
 
     #content {
@@ -68,13 +60,11 @@
       background: #fff;
       resize: vertical;
     }
-
-    #content:focus { outline:2px solid #0052cc; outline-offset:2px; }
+    #content:focus { outline: 2px solid #0052cc; outline-offset: 2px; }
 
     .editor-controls {
-      display:flex; gap:0.5rem; margin-bottom:0.5rem; align-items:center;
+      display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center;
     }
-
     .editor-controls button {
       font-family: 'Verdana', sans-serif;
       font-size: 0.75rem;
@@ -84,17 +74,18 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    .editor-controls button:hover { background:#f5f5f5; }
-    .editor-controls button.active { background:#333; color:#fff; }
+    .editor-controls button:hover { background: #f5f5f5; }
+    .editor-controls button.active { background: #333; color: #fff; }
 
-    .tags-section { margin-bottom:1.5rem; }
-
-    .tags-input-wrapper {
-      display:flex; gap:0.5rem; margin-bottom:0.5rem;
+    .tags-section { margin-bottom: 1.5rem; }
+    .tags-input-wrapper { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+    #tag-input {
+      flex: 1;
+      font-family: 'Verdana', sans-serif;
+      font-size: 0.8125rem;
+      padding: 0.5rem;
+      border: 1px solid #333;
     }
-
-    #tag-input { flex:1; }
-
     #add-tag-button {
       font-family: 'Verdana', sans-serif;
       font-size: 0.75rem;
@@ -104,127 +95,138 @@
       cursor: pointer;
       transition: background 0.2s ease;
     }
-    #add-tag-button:hover { background:#f5f5f5; }
+    #add-tag-button:hover { background: #f5f5f5; }
 
-    .tag-list { display:flex; flex-wrap:wrap; gap:0.5rem; }
-
+    .tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .tag-item {
-      display:inline-flex; align-items:center; gap:0.25rem;
-      background:#0052cc; color:#fff;
-      padding:0.25rem 0.5rem;
-      font-family:'Verdana', sans-serif; font-size:0.75rem;
-      border-radius:2px;
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      background: #0052cc; color: #fff;
+      padding: 0.25rem 0.5rem;
+      font-family: 'Verdana', sans-serif;
+      font-size: 0.75rem;
+      border-radius: 2px;
     }
+    .tag-remove { cursor: pointer; font-weight: bold; font-size: 0.875rem; transition: color 0.2s ease; }
+    .tag-remove:hover { color: #ee0000; }
 
-    .tag-remove {
-      cursor:pointer; font-weight:bold; font-size:0.875rem; transition: color 0.2s ease;
-    }
-    .tag-remove:hover { color:#ee0000; }
-
-    .image-section { margin-bottom:1.5rem; }
-
-    .image-controls { display:flex; gap:0.5rem; margin-bottom:0.5rem; }
+    .image-section { margin-bottom: 1.5rem; }
+    .image-controls { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
     .image-controls input[type="file"],
     .image-controls input[type="text"] {
       font-family: 'Verdana', sans-serif;
       font-size: 0.75rem;
       padding: 0.5rem;
       border: 1px solid #333;
-      width:auto;
     }
-
     .image-controls button {
       font-family: 'Verdana', sans-serif;
       font-size: 0.75rem;
       padding: 0.5rem 1rem;
-      background:#fff; border:1px solid #333; cursor:pointer; transition: background 0.2s ease;
+      background: #fff;
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: background 0.2s ease;
     }
-    .image-controls button:hover { background:#f5f5f5; }
+    .image-controls button:hover { background: #f5f5f5; }
 
     #image-preview-container {
-      margin-top:0.5rem; border:1px solid #e0e0e0; padding:0.5rem; display:none;
+      margin-top: 0.5rem; border: 1px solid #e0e0e0; padding: 0.5rem; display: none;
     }
-    #image-preview-container.has-image { display:block; }
-    #image-preview { max-width:100%; height:auto; display:block; }
+    #image-preview-container.has-image { display: block; }
+    #image-preview { max-width: 100%; height: auto; display: block; }
 
-    .settings-section { margin-bottom:1.5rem; }
-
+    .settings-section { margin-bottom: 1.5rem; }
     #password {
-      font-family:'Verdana', sans-serif; font-size:0.8125rem;
-      padding:0.5rem; border:1px solid #333; width:100%; max-width:300px;
+      font-family: 'Verdana', sans-serif;
+      font-size: 0.8125rem;
+      padding: 0.5rem;
+      border: 1px solid #333;
+      width: 100%;
+      max-width: 300px;
     }
-
-    .save-password-wrapper { margin-top:0.5rem; }
+    .save-password-wrapper { margin-top: 0.5rem; }
     .save-password-wrapper label {
-      font-family:'Verdana', sans-serif; font-size:0.75rem; display:flex; align-items:center; gap:0.25rem; cursor:pointer;
+      font-family: 'Verdana', sans-serif;
+      font-size: 0.75rem;
+      display: flex; align-items: center; gap: 0.25rem; cursor: pointer;
     }
 
     .action-buttons {
-      display:flex; gap:0.5rem; margin-bottom:2rem; padding-bottom:1.5rem; border-bottom:1px solid #333;
+      display: flex; gap: 0.5rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid #333;
     }
     .action-buttons button {
-      font-family:'Verdana', sans-serif; font-size:0.875rem; padding:0.75rem 1.5rem;
-      border:1px solid #333; cursor:pointer; transition:all 0.2s ease; font-weight:bold;
+      font-family: 'Verdana', sans-serif;
+      font-size: 0.875rem;
+      padding: 0.75rem 1.5rem;
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: bold;
     }
+    #submit-button { background: #333; color: #fff; }
+    #submit-button:hover { background: #1a1a1a; }
+    #cancel-edit-button { background: #fff; color: #333; display: none; }
+    #cancel-edit-button:hover { background: #f5f5f5; }
 
-    #submit-button { background:#333; color:#fff; }
-    #submit-button:hover { background:#1a1a1a; }
-    #cancel-edit-button { background:#fff; color:#333; display:none; }
-    #cancel-edit-button:hover { background:#f5f5f5; }
+    .posts-section { margin-top: 2rem; }
+    .posts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .posts-header h2 { font-family: 'Georgia', serif; font-size: 1.25rem; font-weight: bold; }
 
-    .posts-section { margin-top:2rem; }
-
-    .posts-header {
-      display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;
-    }
-    .posts-header h2 {
-      font-family:'Georgia', serif; font-size:1.25rem; font-weight:bold;
-    }
-
-    .search-bar { display:flex; gap:0.5rem; }
+    .search-bar { display: flex; gap: 0.5rem; }
     #search-input {
-      font-family:'Verdana', sans-serif; font-size:0.75rem; padding:0.5rem; border:1px solid #333; width:200px;
+      font-family: 'Verdana', sans-serif; font-size: 0.75rem;
+      padding: 0.5rem; border: 1px solid #333; width: 200px;
     }
 
     .pagination {
-      display:flex; gap:0.5rem; justify-content:center; margin:1rem 0;
+      display: flex; gap: 0.5rem; justify-content: center; margin: 1rem 0;
     }
     .pagination button {
-      font-family:'Verdana', sans-serif; font-size:0.75rem; padding:0.5rem 1rem; background:#fff; border:1px solid #333; cursor:pointer; transition: background 0.2s ease;
+      font-family: 'Verdana', sans-serif; font-size: 0.75rem;
+      padding: 0.5rem 1rem; background: #fff; border: 1px solid #333;
+      cursor: pointer; transition: background 0.2s ease;
     }
-    .pagination button:hover:not(:disabled) { background:#f5f5f5; }
-    .pagination button:disabled { opacity:0.5; cursor:not-allowed; }
+    .pagination button:hover:not(:disabled) { background: #f5f5f5; }
+    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .post-list { list-style:none; }
-
+    .post-list { list-style: none; }
     .post-item {
-      margin-bottom:0.75rem; padding:0.5rem; border-left:2px solid #0052cc; padding-left:0.75rem; transition: background 0.2s ease;
+      margin-bottom: 0.75rem; padding: 0.5rem;
+      border-left: 2px solid #0052cc; padding-left: 0.75rem;
+      transition: background 0.2s ease;
     }
-    .post-item:hover { background:#f5f5f5; }
-
+    .post-item:hover { background: #f5f5f5; }
     .post-item a {
-      font-family:'Georgia', serif; font-size:0.875rem; color:#0052cc; text-decoration:underline; transition: color 0.2s ease;
+      font-family: 'Georgia', serif; font-size: 0.875rem;
+      color: #0052cc; text-decoration: underline; transition: color 0.2s ease;
     }
-    .post-item a:visited { color:#5a3a7a; }
-    .post-item a:hover { color:#ee0000; }
+    .post-item a:visited { color: #5a3a7a; }
+    .post-item a:hover { color: #ee0000; }
 
-    .post-actions { margin-top:0.25rem; display:flex; gap:0.5rem; }
+    .post-actions { margin-top: 0.25rem; display: flex; gap: 0.5rem; }
     .post-actions button {
-      font-family:'Verdana', sans-serif; font-size:0.6875rem; padding:0.25rem 0.5rem; background:#fff; border:1px solid #333; cursor:pointer; transition: background 0.2s ease;
+      font-family: 'Verdana', sans-serif; font-size: 0.6875rem;
+      padding: 0.25rem 0.5rem; background: #fff; border: 1px solid #333;
+      cursor: pointer; transition: background 0.2s ease;
     }
-    .post-actions button:hover { background:#f5f5f5; }
+    .post-actions button:hover { background: #f5f5f5; }
 
     .status-message {
-      font-family:'Verdana', sans-serif; font-size:0.8125rem; padding:0.75rem; margin-bottom:1rem; border:1px solid; display:none;
+      font-family: 'Verdana', sans-serif;
+      font-size: 0.8125rem;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid;
+      display: none;
     }
-    .status-message.success { background:#d4edda; border-color:#28a745; color:#155724; }
-    .status-message.error { background:#f8d7da; border-color:#dc3545; color:#721c24; }
+    .status-message.success { background: #d4edda; border-color: #28a745; color: #155724; }
+    .status-message.error { background: #f8d7da; border-color: #dc3545; color: #721c24; }
 
     @media (max-width: 768px) {
-      body { padding:0.75rem; }
-      .posts-header { flex-direction:column; align-items:flex-start; gap:0.5rem; }
-      #search-input { width:100%; }
-      .image-controls { flex-wrap:wrap; }
+      body { padding: 0.75rem; }
+      .posts-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+      #search-input { width: 100%; }
+      .image-controls { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -305,7 +307,7 @@
   </main>
 
   <script>
-    // State
+    // State management
     let allPosts = [];
     let filteredPosts = [];
     let currentPage = 1;
@@ -314,6 +316,7 @@
     let selectedTags = [];
     let isPlainTextMode = false;
 
+    // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       loadSavedPassword();
       loadPosts();
@@ -321,8 +324,10 @@
     });
 
     function setupEventListeners() {
+      // Form submission
       document.getElementById('post-form').addEventListener('submit', handleSubmit);
 
+      // Tag management
       document.getElementById('add-tag-button').addEventListener('click', addTag);
       document.getElementById('tag-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -331,24 +336,81 @@
         }
       });
 
+      // Editor mode toggle
       document.getElementById('toggle-plaintext').addEventListener('click', toggleEditorMode);
 
+      // Image preview
       document.getElementById('image-input').addEventListener('change', handleImageSelect);
       document.getElementById('clear-attachment-button').addEventListener('click', clearImage);
 
+      // Password saving
       document.getElementById('save-password').addEventListener('change', handlePasswordSave);
 
+      // Cancel edit
       document.getElementById('cancel-edit-button').addEventListener('click', cancelEdit);
 
+      // Search and pagination
       document.getElementById('search-input').addEventListener('input', handleSearch);
       document.getElementById('prev-button').addEventListener('click', () => changePage(-1));
       document.getElementById('next-button').addEventListener('click', () => changePage(1));
     }
 
-    // Tags
+    // Utility: content capture respecting mode
+    function getEditorContent() {
+      const raw = document.getElementById('content').value || '';
+      if (isPlainTextMode) {
+        return raw;
+      }
+      return raw.trim();
+    }
+
+    // Front matter builder with safe quoting for tags and title
+    function buildFrontMatter({ dateISO, lastmodISO, tags, title }) {
+      const quoted = (s) => String(s || '').replace(/"/g, '\\"');
+      const tagList = (tags || []).map(t => `"${quoted(t)}"`).join(', ');
+      let fm = '---
+';
+      if (title) fm += `title: "${quoted(title)}"
+`;
+      if (dateISO) fm += `date: ${dateISO}
+`;
+      if (lastmodISO) fm += `lastmod: ${lastmodISO}
+`;
+      if (tags && tags.length) fm += `tags: [${tagList}]
+`;
+      fm += '---
+
+';
+      return fm;
+    }
+
+    // Parse simple YAML-like front matter block
+    function parseFrontMatter(text) {
+      const fmMatch = text.match(/^---
+([sS]*?)
+---
+?/);
+      if (!fmMatch) return { front: null, body: text };
+      const frontRaw = fmMatch[1];
+      const body = text.slice(fmMatch[0].length);
+      const front = {};
+      frontRaw.split('
+').forEach(line => {
+        const m = line.match(/^(w+):s*(.+)$/);
+        if (m) {
+          const key = m[1];
+          let val = m[2].trim();
+          if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+          front[key] = val;
+        }
+      });
+      return { front, body };
+    }
+
+    // Tag management
     function addTag() {
       const input = document.getElementById('tag-input');
-      const tag = input.value.trim().toLowerCase();
+      const tag = input.value.trim();
       if (tag && !selectedTags.includes(tag)) {
         selectedTags.push(tag);
         renderTags();
@@ -367,14 +429,14 @@
         tagElement.className = 'tag-item';
         tagElement.innerHTML = `
           ${tag}
-          <span class="tag-remove" onclick="removeTag('${tag}')">×</span>
+          <span class="tag-remove" onclick="removeTag('${tag.replace(/'/g, "\\'")}')">×</span>
         `;
         tagList.appendChild(tagElement);
       });
     }
     window.removeTag = removeTag;
 
-    // Editor toggle
+    // Editor mode toggle
     function toggleEditorMode() {
       isPlainTextMode = !isPlainTextMode;
       const button = document.getElementById('toggle-plaintext');
@@ -388,7 +450,7 @@
       }
     }
 
-    // Images
+    // Image handling
     function handleImageSelect(e) {
       const file = e.target.files[0];
       if (file) {
@@ -409,7 +471,7 @@
       container.classList.remove('has-image');
     }
 
-    // Password
+    // Password management
     function loadSavedPassword() {
       const saved = localStorage.getItem('post-password');
       if (saved) {
@@ -426,10 +488,11 @@
       }
     }
 
-    // Submit
+    // Submit flow
     async function handleSubmit(e) {
       e.preventDefault();
-      const content = document.getElementById('content').value;
+
+      const content = getEditorContent();
       const password = document.getElementById('password').value;
       const imageInput = document.getElementById('image-input');
 
@@ -442,11 +505,16 @@
 
       try {
         let imageUrl = null;
+
+        // Upload image if selected
         if (imageInput.files.length > 0) {
           imageUrl = await uploadImage(imageInput.files[0], password);
         }
+
+        // Create or update the post
         await createPost(content, imageUrl, password);
 
+        // Reset form
         document.getElementById('post-form').reset();
         selectedTags = [];
         renderTags();
@@ -457,19 +525,20 @@
 
         showStatus('Post published successfully!', 'success');
         loadPosts();
+
       } catch (error) {
         console.error('Error:', error);
         showStatus('Error: ' + error.message, 'error');
       }
     }
 
+    // Upload image via API
     async function uploadImage(file, password) {
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onload = async () => {
           try {
             const imagePath = document.getElementById('image-path-input').value || 'images/posts';
-            const shortcode = document.getElementById('image-shortcode-input').value || file.name.split('.')[0];
             const response = await fetch('/api/upload-image', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -480,8 +549,13 @@
                 imagePath: imagePath
               })
             });
+
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to upload image');
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to upload image');
+            }
+
+            // Expecting a resolvable URL to use in shortcode
             resolve(data.url);
           } catch (error) {
             reject(error);
@@ -492,33 +566,48 @@
       });
     }
 
-    async function createPost(content, imageUrl, password) {
+    // Create or update post via API (preserve prior title/date if editing)
+    async function createPost(contentBody, imageUrl, password) {
       const now = new Date();
       const isoDate = now.toISOString();
 
-      let markdown = '---\
-';
-      markdown += `date: ${isoDate}\
-`;
-      markdown += `lastmod: ${isoDate}\
-`;
-      if (selectedTags.length > 0) {
-        markdown += `tags: [${selectedTags.join(', ')}]\
-`;
+      // Derive a title from first line for better filenames on the backend
+      const firstLine = (contentBody.split('
+')[0] || '').trim();
+      const derivedTitle = firstLine.slice(0, 60);
+
+      // Preserve previous front matter if editing
+      let prevTitle = null;
+      let prevDate = null;
+      if (editingPost && editingPost.originalFrontMatter) {
+        prevTitle = editingPost.originalFrontMatter.title || null;
+        prevDate = editingPost.originalFrontMatter.date || null;
       }
-      markdown += '---\
-\
-';
-      markdown += content;
+
+      const titleToUse = prevTitle || derivedTitle || 'Untitled';
+      const dateToUse = prevDate || isoDate;
+
+      const fm = buildFrontMatter({
+        title: titleToUse,
+        dateISO: dateToUse,
+        lastmodISO: isoDate,
+        tags: selectedTags
+      });
+
+      let body = fm + contentBody;
 
       if (imageUrl) {
+        // Remove any existing image shortcode then append one
+        body = body.replace(/
+
+{{<s*imgs+.*?>}}/g, '');
         const shortcode = document.getElementById('image-shortcode-input').value || 'image';
-        markdown += `\
-\
+        body += `
+
 {{< img src="${imageUrl}" alt="${shortcode}" >}}`;
       }
 
-      const payload = { content: markdown, password: password };
+      const payload = { title: titleToUse, content: body, password };
       if (editingPost) {
         payload.sha = editingPost.sha;
         payload.path = editingPost.path;
@@ -536,24 +625,37 @@
       return data;
     }
 
-    // Posts
+    // Posts loading and display
     async function loadPosts() {
       try {
         const response = await fetch('/api/get-posts');
         const data = await response.json();
+
         if (response.ok) {
-          allPosts = data.posts || [];
+          // Normalize shape: ensure html_url exists
+          const posts = Array.isArray(data.posts) ? data.posts : [];
+          allPosts = posts.map(p => ({
+            name: p.name,
+            path: p.path,
+            html_url: p.html_url || p.url || ''
+          }));
           filteredPosts = [...allPosts];
+          currentPage = 1;
           renderPosts();
+        } else {
+          showStatus(data.error || 'Failed to load posts', 'error');
         }
       } catch (error) {
         console.error('Error loading posts:', error);
+        showStatus('Error loading posts: ' + error.message, 'error');
       }
     }
 
     function handleSearch(e) {
       const query = e.target.value.toLowerCase();
-      filteredPosts = allPosts.filter(post => post.name.toLowerCase().includes(query));
+      filteredPosts = allPosts.filter(post =>
+        (post.name || '').toLowerCase().includes(query)
+      );
       currentPage = 1;
       renderPosts();
     }
@@ -565,13 +667,16 @@
       const postsToShow = filteredPosts.slice(startIndex, endIndex);
 
       postList.innerHTML = '';
+
       postsToShow.forEach(post => {
+        const link = post.html_url || '#';
+        const safePath = String(post.path || '');
         const li = document.createElement('li');
         li.className = 'post-item';
         li.innerHTML = `
-          <a href="${post.html_url}" target="_blank">${post.name}</a>
+          <a href="${link}" target="_blank" rel="noopener noreferrer">${post.name}</a>
           <div class="post-actions">
-            <button onclick="editPost('${post.path}')">Edit</button>
+            <button onclick="editPost('${safePath.replace(/'/g, "\\'")}')">Edit</button>
           </div>
         `;
         postList.appendChild(li);
@@ -581,14 +686,15 @@
     }
 
     function updatePagination() {
-      const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
-      document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages || 1}`;
-      document.getElementById('prev-button').disabled = currentPage === 1;
-      document.getElementById('next-button').disabled = currentPage >= totalPages;
+      const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
+      document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+      const disableAll = filteredPosts.length === 0;
+      document.getElementById('prev-button').disabled = disableAll || currentPage === 1;
+      document.getElementById('next-button').disabled = disableAll || currentPage >= totalPages;
     }
 
     function changePage(delta) {
-      const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+      const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
       const newPage = currentPage + delta;
       if (newPage >= 1 && newPage <= totalPages) {
         currentPage = newPage;
@@ -596,39 +702,52 @@
       }
     }
 
-    // Edit
+    // Post editing
     async function editPost(path) {
       try {
         const response = await fetch(`/api/get-post-content?path=${encodeURIComponent(path)}`);
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Failed to load post');
 
-        const contentWithoutFrontmatter = data.content.replace(/^---\
-[\\s\\S]*?\
----\
-\
-/, '');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load post');
+        }
 
-        const tagsMatch = data.content.match(/tags:\\s*\\[([^\\]]+)\\]/);
-        if (tagsMatch) {
-          selectedTags = tagsMatch[1].split(',').map(tag => tag.trim());
+        // Parse front matter and content
+        const { front, body } = parseFrontMatter(data.content);
+        editingPost = {
+          path: path,
+          sha: data.sha,
+          originalFrontMatter: front || {}
+        };
+
+        // Remove image shortcode if present in the body for editor view
+        const contentWithoutImage = body.replace(/
+
+{{<s*imgs+.*?>}}/g, '');
+        document.getElementById('content').value = contentWithoutImage;
+
+        document.getElementById('cancel-edit-button').style.display = 'block';
+        document.getElementById('submit-button').textContent = 'Update Post';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showStatus('Editing post. Make changes and click Update Post.', 'success');
+
+        // Render any tags found in front matter
+        if (front && typeof front.tags === 'string') {
+          // Try to parse a list like [ "a", "b" ] or [a, b]
+          const list = front.tags
+            .replace(/^[/, '')
+            .replace(/]$/, '')
+            .split(',')
+            .map(s => s.trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1'))
+            .filter(Boolean);
+          selectedTags = list;
           renderTags();
         } else {
           selectedTags = [];
           renderTags();
         }
 
-        const contentWithoutImage = contentWithoutFrontmatter.replace(/\
-\
-{{<\\s*img\\s+.*?>}}/g, '');
-        document.getElementById('content').value = contentWithoutImage;
-
-        editingPost = { path: path, sha: data.sha };
-        document.getElementById('cancel-edit-button').style.display = 'block';
-        document.getElementById('submit-button').textContent = 'Update Post';
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        showStatus('Editing post. Make changes and click Update Post.', 'success');
       } catch (error) {
         console.error('Error loading post:', error);
         showStatus('Error loading post: ' + error.message, 'error');
@@ -652,7 +771,9 @@
       statusEl.textContent = message;
       statusEl.className = `status-message ${type}`;
       statusEl.style.display = 'block';
-      setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
+      setTimeout(() => {
+        statusEl.style.display = 'none';
+      }, 5000);
     }
   </script>
 </body>
