@@ -25,7 +25,6 @@
 
   <h1>Create Markdown Post</h1>
 
-  <!-- Form to create new post -->
   <form id="postForm">
     <label for="title">Title (optional):</label>
     <input type="text" id="title" name="title">
@@ -50,10 +49,9 @@
 
   <div id="message"></div>
 
-  <!-- Existing posts -->
   <h2>Existing Posts</h2>
   <div id="searchSort">
-    <input type="text" id="search" placeholder="Search posts...">
+    <input type="text" id="search" placeholder="Search filenames...">
     <select id="sort">
       <option value="name-asc">Name ↑</option>
       <option value="name-desc">Name ↓</option>
@@ -105,23 +103,19 @@
     // Load existing posts
     async function loadPosts() {
       try {
-        const res = await fetch('/api/list-posts'); // Replace with your GET API
+        const res = await fetch('/api/list-posts'); // replace with your GET API route
+        if (!res.ok) throw new Error('Failed to fetch');
+
         const data = await res.json();
+        let posts = (data.posts || []).map(p => ({ name: p.name, url: p.url }));
 
-        if (!res.ok) {
-          postListEl.innerHTML = `<li>Error loading posts: ${data.error}</li>`;
-          return;
-        }
-
-        let posts = data.posts || [];
-
-        // Apply search filter
+        // Filter by search term
         const searchTerm = searchInput.value.toLowerCase();
         if (searchTerm) {
           posts = posts.filter(p => p.name.toLowerCase().includes(searchTerm));
         }
 
-        // Apply sorting
+        // Sort
         const sortVal = sortSelect.value;
         posts.sort((a, b) => {
           if (sortVal === 'name-asc') return a.name.localeCompare(b.name);
@@ -129,23 +123,21 @@
           return 0;
         });
 
-        // Render
-        postListEl.innerHTML = posts.length 
+        // Render list (filename only)
+        postListEl.innerHTML = posts.length
           ? posts.map(p => `<li><a href="${p.url}" target="_blank">${p.name}</a></li>`).join('')
           : '<li>No posts found.</li>';
 
       } catch (err) {
         console.error(err);
-        postListEl.innerHTML = '<li>An unexpected error occurred while fetching posts.</li>';
+        postListEl.innerHTML = '<li>Error fetching posts.</li>';
       }
     }
 
-    // Search & sort event listeners
     searchInput.addEventListener('input', loadPosts);
     sortSelect.addEventListener('change', loadPosts);
 
-    // Initial load
-    loadPosts();
+    loadPosts(); // initial load
   </script>
 
 </body>
