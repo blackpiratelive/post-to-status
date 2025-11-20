@@ -5,20 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Markdown Post</title>
   <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; line-height: 1.5; }
-    h1, h2 { text-align: center; }
+    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; line-height: 1.5; }
+    h1 { text-align: center; }
     label { display: block; margin: 0.5rem 0 0.2rem; font-weight: bold; }
-    input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+    input[type="text"], input[type="password"], textarea { width: 100%; padding: 0.5rem; box-sizing: border-box; }
     textarea { resize: vertical; }
-    .tags label { margin-right: 10px; font-weight: normal; }
+    .tags { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tags label { font-weight: normal; }
     button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
     #message { margin-top: 1rem; }
-    #posts { margin-top: 2rem; }
-    #posts ul { list-style: none; padding: 0; }
-    #posts li { padding: 0.5rem 0; border-bottom: 1px solid #ddd; }
-    #searchSort { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    #searchSort input { flex: 1; }
-    #searchSort select { width: 150px; }
   </style>
 </head>
 <body>
@@ -33,12 +28,11 @@
     <textarea id="content" name="content" rows="8" required></textarea>
 
     <div class="tags">
-      <label>Tags:</label>
-      <label><input type="checkbox" name="tags" value="javascript"> javascript</label>
-      <label><input type="checkbox" name="tags" value="webdev"> webdev</label>
-      <label><input type="checkbox" name="tags" value="react"> react</label>
-      <label><input type="checkbox" name="tags" value="tutorial"> tutorial</label>
-      <label><input type="checkbox" name="tags" value="personal"> personal</label>
+      <label><input type="checkbox" name="tags" value="website"> website</label>
+      <label><input type="checkbox" name="tags" value="quotes"> quotes</label>
+      <label><input type="checkbox" name="tags" value="study"> study</label>
+      <label><input type="checkbox" name="tags" value="links"> links</label>
+      <label><input type="checkbox" name="tags" value="bookmarks"> bookmarks</label>
     </div>
 
     <label for="password">Password:</label>
@@ -49,26 +43,31 @@
 
   <div id="message"></div>
 
-  <h2>Existing Posts</h2>
-  <div id="searchSort">
-    <input type="text" id="search" placeholder="Search filenames...">
-    <select id="sort">
-      <option value="name-asc">Name ↑</option>
-      <option value="name-desc">Name ↓</option>
-    </select>
-  </div>
-  <div id="posts">
-    <ul id="postList"></ul>
-  </div>
-
   <script>
     const form = document.getElementById('postForm');
     const messageEl = document.getElementById('message');
-    const postListEl = document.getElementById('postList');
-    const searchInput = document.getElementById('search');
-    const sortSelect = document.getElementById('sort');
 
-    // Create post
+    function generateFilename(title) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+
+      const datePart = `${year}-${month}-${day}`;
+      const timePart = `${hours}${minutes}${seconds}`;
+
+      // slugify title
+      const slug = title ? title.toLowerCase().trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-') : 'untitled';
+
+      return `${datePart}-${timePart}-${slug}.md`;
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       messageEl.textContent = 'Creating post...';
@@ -79,10 +78,12 @@
       const tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value);
 
       try {
+        const filename = generateFilename(title);
+
         const res = await fetch('/api/create-post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content, tags, password })
+          body: JSON.stringify({ title, content, tags, password, path: filename })
         });
 
         const data = await res.json();
@@ -92,52 +93,12 @@
         } else {
           messageEl.innerHTML = `Success! <a href="${data.path}" target="_blank">View post on GitHub</a>`;
           form.reset();
-          loadPosts(); // reload list after creating
         }
       } catch (err) {
         console.error(err);
         messageEl.textContent = 'An unexpected error occurred.';
       }
     });
-
-    // Load existing posts
-    async function loadPosts() {
-      try {
-        const res = await fetch('/api/list-posts'); // replace with your GET API route
-        if (!res.ok) throw new Error('Failed to fetch');
-
-        const data = await res.json();
-        let posts = (data.posts || []).map(p => ({ name: p.name, url: p.url }));
-
-        // Filter by search term
-        const searchTerm = searchInput.value.toLowerCase();
-        if (searchTerm) {
-          posts = posts.filter(p => p.name.toLowerCase().includes(searchTerm));
-        }
-
-        // Sort
-        const sortVal = sortSelect.value;
-        posts.sort((a, b) => {
-          if (sortVal === 'name-asc') return a.name.localeCompare(b.name);
-          if (sortVal === 'name-desc') return b.name.localeCompare(a.name);
-          return 0;
-        });
-
-        // Render list (filename only)
-        postListEl.innerHTML = posts.length
-          ? posts.map(p => `<li><a href="${p.url}" target="_blank">${p.name}</a></li>`).join('')
-          : '<li>No posts found.</li>';
-
-      } catch (err) {
-        console.error(err);
-        postListEl.innerHTML = '<li>Error fetching posts.</li>';
-      }
-    }
-
-    searchInput.addEventListener('input', loadPosts);
-    sortSelect.addEventListener('change', loadPosts);
-
-    loadPosts(); // initial load
   </script>
 
 </body>
