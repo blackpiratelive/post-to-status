@@ -2,138 +2,168 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Post Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
+    <link href="/styles/tailwind.css" rel="stylesheet">
     <style>
+        /* Additional custom styles for iOS-like feel */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #fefefe;
-            color: #000;
-            margin: 0;
-            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior-y: none; /* Prevents pull-to-refresh */
         }
-        h1, h2, h3 {
-            margin: 0.5em 0;
+        .font-kalam {
+            font-family: 'Kalam', cursive;
         }
-        header, main, section, footer {
-            margin: 1em;
-        }
-        input, textarea, button, select {
-            font-family: inherit;
-            font-size: 1em;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 0.4em;
-            margin-bottom: 0.5em;
-            border: 1px solid #000;
-            box-sizing: border-box;
-        }
-        textarea {
-            resize: vertical;
-        }
-        button {
-            padding: 0.5em 1em;
-            border: 1px solid #000;
-            background: #ddd;
+        /* Style for the color picker input */
+        #color-picker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background-color: transparent;
+            border: none;
             cursor: pointer;
         }
-        button:hover {
-            background: #ccc;
+        #color-picker::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #e5e7eb;
         }
-        .hidden {
-            display: none;
+        #color-picker::-moz-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #e5e7eb;
         }
-        #attachment-preview {
-            display: block;
-            max-width: 100%;
-            max-height: 150px;
-            margin-bottom: 0.5em;
-            border: 1px solid #000;
+        /* Custom animation for the popup */
+        .popup-content {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #draw-popup {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-        #draw-popup .popup-content {
-            background: #fff;
-            width: 90%;
-            max-width: 500px;
-            padding: 1em;
-            position: relative;
-        }
-        #color-palette button {
-            width: 20px;
-            height: 20px;
-            border: 1px solid #000;
-            margin-right: 0.2em;
-            padding: 0;
+        .show .popup-content {
+            transform: translateY(0);
         }
     </style>
 </head>
-<body>
+<body class="bg-paper text-gray-800">
+    <div class="container max-w-2xl mx-auto p-4">
+        <header class="text-center my-4 md:my-8">
+            <h1 class="text-5xl font-kalam text-yellow-500">New Note</h1>
+        </header>
 
-<header>
-    <h1 id="dashboard-title">New Note</h1>
-</header>
+        <!-- Main Form Section -->
+        <main id="form-section">
+            <!-- Content and Title Form -->
+            <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+                <form id="post-form">
+                    <div class="p-4 border-b border-gray-200">
+                        <input type="text" id="title" placeholder="Title" class="w-full text-xl font-bold placeholder-gray-400 focus:outline-none bg-transparent">
+                    </div>
+                    <div class="p-4">
+                        <textarea id="content" required placeholder="Start writing..." class="w-full h-40 text-base placeholder-gray-400 focus:outline-none bg-transparent resize-none"></textarea>
+                    </div>
+                </form>
+            </div>
 
-<main>
-    <form id="post-form">
-        <input type="text" id="title" placeholder="Title" required>
-        <textarea id="content" placeholder="Start writing..." required></textarea>
-        
-        <div>
-            <input type="file" id="image-input" accept="image/*">
-        </div>
-        <img id="attachment-preview" src="#" alt="Attachment preview" class="hidden">
-        <button type="button" id="clear-attachment-button" class="hidden">Clear Attachment</button>
+            <!-- Attachments Section -->
+            <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+                 <!-- This is where the image/drawing preview will appear -->
+                <div id="attachment-preview-container" class="hidden group relative">
+                    <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-lg w-full max-h-60 object-contain mb-2 border border-gray-200">
+                    <button id="clear-attachment-button" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div id="attachment-buttons" class="flex items-center gap-4">
+                    <button type="button" id="open-draw-popup" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition">Draw Picture</button>
+                    <label for="image-input" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition cursor-pointer relative">
+                        Upload Image
+                        <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    </label>
+                </div>
+            </div>
 
-        <div>
-            <input type="text" id="image-path-input" placeholder="Image Path">
-            <input type="text" id="image-shortcode-input" placeholder="Shortcode Template">
-            <input type="password" id="password" placeholder="Password" required>
-            <label><input type="checkbox" id="save-password"> Save Password</label>
-        </div>
+            <!-- Settings & Password Section -->
+            <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+                <div class="mb-4">
+                    <label for="image-path-input" class="text-xs text-gray-500 mb-1 block">Image Path</label>
+                    <input type="text" id="image-path-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div class="mb-4">
+                    <label for="image-shortcode-input" class="text-xs text-gray-500 mb-1 block">Shortcode Template <span class="text-gray-400">(use IMAGE_NAME)</span></label>
+                    <input type="text" id="image-shortcode-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div>
+                    <label for="password" class="text-xs text-gray-500 mb-1 block">Password</label>
+                    <input type="password" id="password" required class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div class="flex items-center mt-2">
+                    <input type="checkbox" id="save-password" class="h-4 w-4 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded">
+                    <label for="save-password" class="ml-2 block text-sm text-gray-700">Save Password</label>
+                </div>
+            </div>
 
-        <button type="submit" id="submit-button">Save Note</button>
-        <button type="button" id="cancel-edit-button" class="hidden">Cancel Edit</button>
-    </form>
-    <div id="message-box"></div>
-</main>
+            <!-- Action Buttons -->
+            <div class="button-group space-y-3">
+                <button type="submit" id="submit-button" form="post-form" class="w-full py-3 px-4 bg-yellow-400 hover:bg-yellow-500 text-white rounded-xl text-base font-semibold shadow-sm transition disabled:bg-gray-300">
+                    <span id="button-text">Save Note</span>
+                </button>
+                <button type="button" id="cancel-edit-button" class="hidden w-full py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-base font-semibold transition">Cancel Edit</button>
+            </div>
+            <div id="message-box" class="mt-4 text-center text-sm"></div>
+        </main>
 
-<section id="posts-section">
-    <h2>Previous Notes</h2>
-    <input type="search" id="search-input" placeholder="Search notes...">
-    <ul id="posts-list"></ul>
-    <div id="posts-loader"></div>
-    <div id="posts-error"></div>
-    <div id="pagination-controls" class="hidden">
-        <button id="prev-button">Previous</button>
-        <span id="page-indicator"></span>
-        <button id="next-button">Next</button>
+        <!-- Previous Posts Section -->
+        <section id="posts-section" class="mt-12">
+            <h2 class="text-xl font-bold mb-4">Previous Notes</h2>
+            <div class="bg-white rounded-xl shadow-sm">
+                 <div class="p-4 border-b border-gray-200">
+                    <input type="search" id="search-input" placeholder="Search notes..." class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+                <div>
+                    <ul id="posts-list" class="divide-y divide-gray-200"></ul>
+                    <div id="posts-loader" class="text-center p-4 text-gray-500 text-sm"></div>
+                    <div id="posts-error" class="text-center p-4 text-red-500 text-sm"></div>
+                </div>
+                <div id="pagination-controls" class="hidden flex justify-between items-center p-4 border-t border-gray-200">
+                    <button id="prev-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <span id="page-indicator" class="text-sm text-gray-500"></span>
+                    <button id="next-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                </div>
+            </div>
+        </section>
     </div>
-</section>
 
-<div id="draw-popup">
-    <div class="popup-content">
-        <button id="cancel-draw-button">Cancel</button>
-        <h3>Draw</h3>
-        <canvas id="drawing-canvas" style="border:1px solid #000; width:100%; height:200px;"></canvas>
-        <button id="save-draw-button">Save</button>
-        <button id="undo-button">Undo</button>
-        <div id="color-palette"></div>
-        <input type="color" id="color-picker" value="#000000">
+    <!-- Drawing Popup -->
+    <div id="draw-popup" class="fixed inset-0 bg-black/40 flex justify-center items-center opacity-0 invisible transition-opacity duration-300">
+        <div class="popup-content fixed inset-0 bg-white flex flex-col transform translate-y-full">
+            <header class="flex justify-between items-center p-4 border-b border-gray-200 flex-shrink-0">
+                <button id="cancel-draw-button" class="text-yellow-500 font-medium">Cancel</button>
+                <h3 class="font-semibold">Draw</h3>
+                <button id="save-draw-button" class="text-yellow-500 font-bold">Save</button>
+            </header>
+            <main class="flex-grow relative">
+                <canvas id="drawing-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+            </main>
+             <footer class="popup-footer p-4 border-t border-gray-200 flex-shrink-0">
+                 <div class="flex items-center justify-between w-full">
+                     <button id="undo-button" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                         </svg>
+                     </button>
+                     <div id="color-palette" class="flex items-center gap-2">
+                         <!-- Color palette buttons will be injected by JS -->
+                     </div>
+                     <input type="color" id="color-picker" value="#000000">
+                 </div>
+            </footer>
+        </div>
     </div>
-</div>
-
-
-
 
     <script>
         // --- Element Selectors ---
