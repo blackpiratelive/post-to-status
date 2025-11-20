@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Markdown Post</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; line-height: 1.5; }
+    h1 { text-align: center; }
+    label { display: block; margin: 0.5rem 0 0.2rem; font-weight: bold; }
+    input[type="text"], input[type="password"], textarea { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+    textarea { resize: vertical; }
+    .tags { margin-bottom: 1rem; }
+    .tags label { margin-right: 10px; font-weight: normal; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+    #message { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+  <h1>Create Markdown Post</h1>
+
+  <form id="postForm">
+    <label for="title">Title (optional):</label>
+    <input type="text" id="title" name="title">
+
+    <label for="content">Content:</label>
+    <textarea id="content" name="content" rows="8" required></textarea>
+
+    <div class="tags">
+      <label>Tags:</label>
+      <label><input type="checkbox" name="tags" value="javascript"> javascript</label>
+      <label><input type="checkbox" name="tags" value="webdev"> webdev</label>
+      <label><input type="checkbox" name="tags" value="react"> react</label>
+      <label><input type="checkbox" name="tags" value="tutorial"> tutorial</label>
+      <label><input type="checkbox" name="tags" value="personal"> personal</label>
+    </div>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Create Post</button>
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    const form = document.getElementById('postForm');
+    const messageEl = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      messageEl.textContent = 'Creating post...';
+
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+      const password = document.getElementById('password').value;
+      const tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value);
+
+      try {
+        const res = await fetch('/api/create-post', { // Replace with your actual API route
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, content, tags, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          messageEl.textContent = `Error: ${data.error}`;
+        } else {
+          messageEl.innerHTML = `Success! <a href="${data.path}" target="_blank">View post on GitHub</a>`;
+          form.reset();
+        }
+      } catch (err) {
+        console.error(err);
+        messageEl.textContent = 'An unexpected error occurred.';
+      }
+    });
+  </script>
+
+</body>
+</html>
