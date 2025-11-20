@@ -47,6 +47,7 @@
     const form = document.getElementById('postForm');
     const messageEl = document.getElementById('message');
 
+    // Function to generate a unique filename with timestamp
     function generateFilename(title) {
       const now = new Date();
       const year = now.getFullYear();
@@ -59,7 +60,6 @@
       const datePart = `${year}-${month}-${day}`;
       const timePart = `${hours}${minutes}${seconds}`;
 
-      // slugify title
       const slug = title ? title.toLowerCase().trim()
         .replace(/\s+/g, '-')
         .replace(/[^\w\-]+/g, '')
@@ -79,11 +79,19 @@
 
       try {
         const filename = generateFilename(title);
+        const client_iso_date = new Date().toISOString(); // valid ISO date
 
         const res = await fetch('/api/create-post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content, tags, password, path: filename })
+          body: JSON.stringify({ 
+            title, 
+            content, 
+            tags, 
+            password, 
+            path: filename,
+            client_iso_date
+          })
         });
 
         const data = await res.json();
