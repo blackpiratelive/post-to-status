@@ -5,21 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Markdown Post</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; line-height: 1.5; }
-    h1 { text-align: center; }
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; line-height: 1.5; }
+    h1, h2 { text-align: center; }
     label { display: block; margin: 0.5rem 0 0.2rem; font-weight: bold; }
-    input[type="text"], input[type="password"], textarea { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+    input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
     textarea { resize: vertical; }
-    .tags { margin-bottom: 1rem; }
     .tags label { margin-right: 10px; font-weight: normal; }
     button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
     #message { margin-top: 1rem; }
+    #posts { margin-top: 2rem; }
+    #posts ul { list-style: none; padding: 0; }
+    #posts li { padding: 0.5rem 0; border-bottom: 1px solid #ddd; }
+    #searchSort { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    #searchSort input { flex: 1; }
+    #searchSort select { width: 150px; }
   </style>
 </head>
 <body>
 
   <h1>Create Markdown Post</h1>
 
+  <!-- Form to create new post -->
   <form id="postForm">
     <label for="title">Title (optional):</label>
     <input type="text" id="title" name="title">
@@ -44,10 +50,27 @@
 
   <div id="message"></div>
 
+  <!-- Existing posts -->
+  <h2>Existing Posts</h2>
+  <div id="searchSort">
+    <input type="text" id="search" placeholder="Search posts...">
+    <select id="sort">
+      <option value="name-asc">Name ↑</option>
+      <option value="name-desc">Name ↓</option>
+    </select>
+  </div>
+  <div id="posts">
+    <ul id="postList"></ul>
+  </div>
+
   <script>
     const form = document.getElementById('postForm');
     const messageEl = document.getElementById('message');
+    const postListEl = document.getElementById('postList');
+    const searchInput = document.getElementById('search');
+    const sortSelect = document.getElementById('sort');
 
+    // Create post
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       messageEl.textContent = 'Creating post...';
@@ -58,7 +81,7 @@
       const tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value);
 
       try {
-        const res = await fetch('/api/create-post', { // Replace with your actual API route
+        const res = await fetch('/api/create-post', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, content, tags, password })
@@ -71,12 +94,58 @@
         } else {
           messageEl.innerHTML = `Success! <a href="${data.path}" target="_blank">View post on GitHub</a>`;
           form.reset();
+          loadPosts(); // reload list after creating
         }
       } catch (err) {
         console.error(err);
         messageEl.textContent = 'An unexpected error occurred.';
       }
     });
+
+    // Load existing posts
+    async function loadPosts() {
+      try {
+        const res = await fetch('/api/list-posts'); // Replace with your GET API
+        const data = await res.json();
+
+        if (!res.ok) {
+          postListEl.innerHTML = `<li>Error loading posts: ${data.error}</li>`;
+          return;
+        }
+
+        let posts = data.posts || [];
+
+        // Apply search filter
+        const searchTerm = searchInput.value.toLowerCase();
+        if (searchTerm) {
+          posts = posts.filter(p => p.name.toLowerCase().includes(searchTerm));
+        }
+
+        // Apply sorting
+        const sortVal = sortSelect.value;
+        posts.sort((a, b) => {
+          if (sortVal === 'name-asc') return a.name.localeCompare(b.name);
+          if (sortVal === 'name-desc') return b.name.localeCompare(a.name);
+          return 0;
+        });
+
+        // Render
+        postListEl.innerHTML = posts.length 
+          ? posts.map(p => `<li><a href="${p.url}" target="_blank">${p.name}</a></li>`).join('')
+          : '<li>No posts found.</li>';
+
+      } catch (err) {
+        console.error(err);
+        postListEl.innerHTML = '<li>An unexpected error occurred while fetching posts.</li>';
+      }
+    }
+
+    // Search & sort event listeners
+    searchInput.addEventListener('input', loadPosts);
+    sortSelect.addEventListener('change', loadPosts);
+
+    // Initial load
+    loadPosts();
   </script>
 
 </body>
