@@ -18,32 +18,7 @@
         .font-kalam {
             font-family: 'Kalam', cursive;
         }
-        /* Style for the color picker input */
-        #color-picker {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            width: 40px;
-            height: 40px;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-        }
-        #color-picker::-webkit-color-swatch {
-            border-radius: 50%;
-            border: 2px solid #e5e7eb;
-        }
-        #color-picker::-moz-color-swatch {
-            border-radius: 50%;
-            border: 2px solid #e5e7eb;
-        }
-        /* Custom animation for the popup */
-        .popup-content {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .show .popup-content {
-            transform: translateY(0);
-        }
+        
     </style>
 </head>
 <body class="bg-paper text-gray-800">
@@ -68,7 +43,7 @@
 
             <!-- Attachments Section -->
             <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
-                 <!-- This is where the image/drawing preview will appear -->
+                 <!-- This is where the image preview will appear -->
                 <div id="attachment-preview-container" class="hidden group relative">
                     <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-lg w-full max-h-60 object-contain mb-2 border border-gray-200">
                     <button id="clear-attachment-button" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -78,9 +53,8 @@
                     </button>
                 </div>
                 
-                <div id="attachment-buttons" class="flex items-center gap-4">
-                    <button type="button" id="open-draw-popup" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition">Draw Picture</button>
-                    <label for="image-input" class="flex-1 text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition cursor-pointer relative">
+                <div id="attachment-buttons" class="flex items-center">
+                    <label for="image-input" class="w-full text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition cursor-pointer relative">
                         Upload Image
                         <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                     </label>
@@ -138,33 +112,6 @@
         </section>
     </div>
 
-    <!-- Drawing Popup -->
-    <div id="draw-popup" class="fixed inset-0 bg-black/40 flex justify-center items-center opacity-0 invisible transition-opacity duration-300">
-        <div class="popup-content fixed inset-0 bg-white flex flex-col transform translate-y-full">
-            <header class="flex justify-between items-center p-4 border-b border-gray-200 flex-shrink-0">
-                <button id="cancel-draw-button" class="text-yellow-500 font-medium">Cancel</button>
-                <h3 class="font-semibold">Draw</h3>
-                <button id="save-draw-button" class="text-yellow-500 font-bold">Save</button>
-            </header>
-            <main class="flex-grow relative">
-                <canvas id="drawing-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
-            </main>
-             <footer class="popup-footer p-4 border-t border-gray-200 flex-shrink-0">
-                 <div class="flex items-center justify-between w-full">
-                     <button id="undo-button" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                         </svg>
-                     </button>
-                     <div id="color-palette" class="flex items-center gap-2">
-                         <!-- Color palette buttons will be injected by JS -->
-                     </div>
-                     <input type="color" id="color-picker" value="#000000">
-                 </div>
-            </footer>
-        </div>
-    </div>
-
     <script>
         // --- Element Selectors ---
         const form = document.getElementById('post-form');
@@ -190,17 +137,6 @@
         const clearAttachmentButton = document.getElementById('clear-attachment-button');
         const attachmentButtons = document.getElementById('attachment-buttons');
 
-        // Drawing Popup & Canvas
-        const canvas = document.getElementById('drawing-canvas');
-        const ctx = canvas.getContext('2d');
-        const colorPicker = document.getElementById('color-picker');
-        const drawPopup = document.getElementById('draw-popup');
-        const openDrawPopupButton = document.getElementById('open-draw-popup');
-        const cancelDrawButton = document.getElementById('cancel-draw-button');
-        const saveDrawButton = document.getElementById('save-draw-button');
-        const undoButton = document.getElementById('undo-button');
-        const colorPalette = document.getElementById('color-palette');
-        
         // Pagination
         const paginationControls = document.getElementById('pagination-controls');
         const prevButton = document.getElementById('prev-button');
@@ -210,18 +146,14 @@
         // --- State Variables ---
         let allPostsCache = [];
         let editState = { path: null, sha: null };
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let drawHistory = [];
-        let currentAttachment = null; // Can be 'file' or 'drawing'
+        let currentAttachment = null; // Can be 'file'
         let currentPage = 1;
         const postsPerPage = 10;
         let totalPages = 1;
 
         // --- Attachment & Preview Functions ---
-        function showAttachmentPreview(src, type) {
-            currentAttachment = type;
+        function showAttachmentPreview(src) {
+            currentAttachment = 'file';
             attachmentPreview.src = src;
             attachmentPreviewContainer.classList.remove('hidden');
             attachmentButtons.classList.add('hidden');
@@ -232,123 +164,7 @@
             attachmentPreviewContainer.classList.add('hidden');
             attachmentButtons.classList.remove('hidden');
             imageInput.value = ''; // Clear file input
-            localStorage.removeItem('savedCanvas'); // Clear saved drawing
             currentAttachment = null;
-        }
-
-        // --- Canvas & Drawing Functions ---
-        const paletteColors = ['#000000', '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#AF52DE'];
-
-        function setupColorPalette() {
-            paletteColors.forEach(color => {
-                const button = document.createElement('button');
-                button.className = 'w-6 h-6 rounded-full border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-yellow-400';
-                button.style.backgroundColor = color;
-                button.addEventListener('click', () => {
-                    ctx.strokeStyle = color;
-                    colorPicker.value = color;
-                });
-                colorPalette.appendChild(button);
-            });
-        }
-        
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-            redrawCanvas();
-        }
-
-        function saveHistory() {
-            if (canvas.width > 0 && canvas.height > 0) {
-                 drawHistory.push(canvas.toDataURL());
-            }
-        }
-
-        function undoLast() {
-            if (drawHistory.length > 1) {
-                drawHistory.pop(); // Remove current state
-                const lastState = drawHistory[drawHistory.length - 1];
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
-                };
-                img.src = lastState;
-            } else {
-                // If only one state (or zero), clear it all
-                drawHistory = [];
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                saveHistory(); // Save the blank state
-            }
-        }
-
-        function redrawCanvas() {
-            if (drawHistory.length > 0) {
-                 const lastState = drawHistory[drawHistory.length - 1];
-                 const img = new Image();
-                 img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
-                 };
-                 img.src = lastState;
-            } else {
-                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        }
-        
-        function draw(e) {
-            if (!isDrawing) return;
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || e.touches[0].clientX) - rect.left;
-            const y = (e.clientY || e.touches[0].clientY) - rect.top;
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            [lastX, lastY] = [x, y];
-        }
-
-        function startDrawing(e) {
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            [lastX, lastY] = [(e.clientX || e.touches[0].clientX) - rect.left, (e.clientY || e.touches[0].clientY) - rect.top];
-        }
-
-        function stopDrawing() { 
-            if (isDrawing) {
-                isDrawing = false;
-                saveHistory();
-            }
-        }
-
-        // --- Popup Functions ---
-        function openPopup() {
-            drawPopup.classList.add('show');
-            drawPopup.classList.remove('invisible', 'opacity-0');
-            drawPopup.classList.add('opacity-100');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => {
-                resizeCanvas();
-                if (drawHistory.length === 0) {
-                    saveHistory();
-                }
-            }, 50);
-        }
-        
-        function closePopup() {
-            drawPopup.classList.remove('show', 'opacity-100');
-            drawPopup.classList.add('opacity-0');
-            setTimeout(() => {
-                drawPopup.classList.add('invisible');
-            }, 300); // Match animation duration
-            document.body.style.overflow = '';
         }
 
         // --- Main API & Form Functions ---
@@ -443,7 +259,6 @@
             buttonText.textContent = 'Save Note';
             cancelEditButton.classList.add('hidden');
             clearAttachment();
-            drawHistory = [];
             loadPassword();
             loadImagePath();
             loadShortcode();
@@ -489,10 +304,7 @@
             let imageName = null;
 
             try {
-                if (currentAttachment === 'drawing') {
-                    imageData = localStorage.getItem('savedCanvas');
-                    imageName = `drawing-${Date.now()}.png`;
-                } else if (currentAttachment === 'file' && imageInput.files[0]) {
+                if (currentAttachment === 'file' && imageInput.files[0]) {
                     imageData = await getBase64(imageInput.files[0]);
                     imageName = imageInput.files[0].name;
                 }
@@ -576,19 +388,8 @@
             if (e.target.files && e.target.files[0]) {
                 const file = e.target.files[0];
                 const dataUrl = await getBase64(file);
-                showAttachmentPreview(dataUrl, 'file');
+                showAttachmentPreview(dataUrl);
             }
-        });
-
-        // Popup and Canvas Listeners
-        openDrawPopupButton.addEventListener('click', openPopup);
-        cancelDrawButton.addEventListener('click', closePopup);
-        undoButton.addEventListener('click', undoLast);
-        saveDrawButton.addEventListener('click', () => {
-            const dataUrl = canvas.toDataURL('image/png');
-            localStorage.setItem('savedCanvas', dataUrl);
-            showAttachmentPreview(dataUrl, 'drawing');
-            closePopup();
         });
 
         // Pagination Listeners
@@ -605,24 +406,13 @@
             }
         });
 
-        colorPicker.addEventListener('input', (e) => ctx.strokeStyle = e.target.value);
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-        canvas.addEventListener('touchstart', startDrawing, { passive: false });
-        canvas.addEventListener('touchmove', draw, { passive: false });
-        canvas.addEventListener('touchend', stopDrawing);
-
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
             loadPassword();
             loadImagePath();
             loadShortcode();
             fetchPosts();
-            setupColorPalette();
         });
     </script>
 </body>
 </html>
-
