@@ -4,250 +4,263 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Post Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="/styles/tailwind.css" rel="stylesheet">
     <style>
-        :root {
-            --glass-bg: rgba(255, 255, 255, 0.62);
-            --glass-border: rgba(255, 255, 255, 0.45);
-            --glass-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
-            --glass-highlight: rgba(255, 255, 255, 0.7);
-            --accent: #f59e0b;
-            --accent-soft: rgba(245, 158, 11, 0.18);
-            --text: #0f172a;
-            --muted: #64748b;
-        }
-
-        /* iOS glass treatment */
-        body.glassy-body {
-            font-family: 'Manrope', sans-serif;
+        body {
+            font-family: system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            overscroll-behavior-y: none; /* Prevents pull-to-refresh */
-            color: var(--text);
-            min-height: 100vh;
-            background:
-                radial-gradient(1200px 600px at 10% -10%, rgba(56, 189, 248, 0.28), transparent 60%),
-                radial-gradient(900px 500px at 90% 0%, rgba(34, 197, 94, 0.18), transparent 60%),
-                linear-gradient(180deg, #f8fafc 0%, #eef2ff 55%, #f1f5f9 100%);
+            overscroll-behavior-y: none;
+            color: #111;
+            background: #fff;
+            margin: 0;
+            padding: 16px;
+            line-height: 1.4;
         }
-        body.glassy-body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(800px 800px at 20% 30%, rgba(255, 255, 255, 0.4), transparent 60%),
-                radial-gradient(700px 700px at 80% 70%, rgba(255, 255, 255, 0.32), transparent 60%);
-            pointer-events: none;
-            z-index: 0;
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
         }
-
-        .glass-layer {
+        h1 {
+            font-size: 28px;
+            margin: 0 0 12px;
+        }
+        h2 {
+            font-size: 18px;
+            margin: 0 0 8px;
+        }
+        .panel {
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        .field {
+            margin-bottom: 12px;
+        }
+        .field:last-child {
+            margin-bottom: 0;
+        }
+        label {
+            font-size: 12px;
+            color: #444;
+            display: block;
+            margin-bottom: 4px;
+        }
+        input[type="text"],
+        input[type="password"],
+        input[type="search"],
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fff;
+        }
+        textarea {
+            resize: vertical;
+        }
+        button {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #bbb;
+            background: #f5f5f5;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #eee;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .button-group button {
+            width: 100%;
+        }
+        .button-group button + button {
+            margin-top: 8px;
+        }
+        #attachment-preview {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-bottom: 8px;
+        }
+        #attachment-preview-container {
             position: relative;
-            z-index: 1;
         }
-        .font-kalam {
-            font-family: 'Kalam', cursive;
-        }
-        .glass-title {
-            color: #f59e0b;
-            text-shadow: 0 12px 30px rgba(245, 158, 11, 0.25);
-        }
-        .glass-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-            backdrop-filter: blur(18px) saturate(160%);
-        }
-        .glass-bar {
-            background: rgba(255, 255, 255, 0.65);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-        }
-        .glass-input {
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            border-radius: 12px;
-            box-shadow: inset 0 1px 0 var(--glass-highlight);
-            color: var(--text);
-        }
-        .glass-input::placeholder {
-            color: var(--muted);
-        }
-        .glass-input:focus {
-            outline: none;
-            border-color: rgba(245, 158, 11, 0.55);
-            box-shadow: 0 0 0 3px var(--accent-soft);
-        }
-        .glass-primary {
-            background: linear-gradient(135deg, #fde047, #f59e0b);
-            color: #1f2937;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 12px 30px rgba(245, 158, 11, 0.28);
-        }
-        .glass-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 16px 36px rgba(245, 158, 11, 0.32);
-        }
-        .glass-secondary {
-            background: rgba(255, 255, 255, 0.55);
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            color: #1f2937;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-        }
-        .glass-button {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            color: #1f2937;
-            box-shadow: inset 0 1px 0 var(--glass-highlight);
-        }
-        .glass-button:hover {
-            background: rgba(255, 255, 255, 0.72);
-        }
-        .mode-toggle {
-            gap: 0.5rem;
-        }
-        .toggle-track {
-            position: relative;
-            width: 40px;
-            height: 22px;
-            border-radius: 999px;
-            background: rgba(148, 163, 184, 0.35);
-            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
-            transition: background 0.2s ease;
-        }
-        .toggle-thumb {
+        #clear-attachment-button {
             position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
-            transition: transform 0.2s ease;
+            top: 6px;
+            right: 6px;
+            border: none;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border-radius: 999px;
+            padding: 4px 6px;
+            cursor: pointer;
         }
-        .mode-toggle input:checked + .toggle-track {
-            background: rgba(245, 158, 11, 0.65);
+        #posts-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        .mode-toggle input:checked + .toggle-track .toggle-thumb {
-            transform: translateX(18px);
+        #posts-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-top: 1px solid #eee;
         }
-        .glass-divider {
-            border-color: rgba(148, 163, 184, 0.2);
+        #posts-list li:first-child {
+            border-top: none;
         }
-        .glass-list li {
-            transition: background 0.2s ease;
+        #pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
         }
-        .glass-list li:hover {
-            background: rgba(255, 255, 255, 0.5);
+        #message-box,
+        #posts-loader,
+        #posts-error {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 8px;
         }
-        
+        #posts-loader {
+            color: #666;
+        }
+        #posts-error {
+            color: #c00;
+        }
+        #message-box.info {
+            color: #555;
+        }
+        #message-box.success {
+            color: #0a7;
+        }
+        #message-box.error {
+            color: #c00;
+        }
+        .mode-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .inline-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #444;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
-<body class="glassy-body">
-    <div class="container glass-layer max-w-2xl mx-auto p-4">
-        <header class="text-center my-4 md:my-8">
-            <h1 class="text-5xl font-kalam glass-title">New Note</h1>
+<body>
+    <div class="container">
+        <header>
+            <h1>New Note</h1>
         </header>
 
         <!-- Main Form Section -->
         <main id="form-section">
             <!-- Content and Title Form -->
-            <div class="glass-card rounded-2xl mb-6 overflow-hidden">
+            <div class="panel">
                 <form id="post-form">
-                    <div class="glass-bar flex items-center justify-between px-4 py-2">
-                        <span class="text-xs font-semibold text-gray-500">Mode</span>
-                        <label for="raw-toggle" class="mode-toggle flex items-center text-xs text-gray-500 cursor-pointer">
-                            <span>Editor</span>
-                            <input type="checkbox" id="raw-toggle" class="sr-only peer">
-                            <span class="toggle-track">
-                                <span class="toggle-thumb"></span>
-                            </span>
-                            <span>Raw</span>
+                    <div class="mode-row">
+                        <strong>Mode</strong>
+                        <label class="inline-label" for="raw-toggle">
+                            <input type="checkbox" id="raw-toggle">
+                            Raw mode
                         </label>
                     </div>
                     <div id="editor-fields">
-                        <div class="p-4 border-b glass-divider">
-                            <input type="text" id="title" placeholder="Title" class="glass-input w-full text-xl font-semibold placeholder-slate-400 focus:outline-none">
+                        <div class="field">
+                            <input type="text" id="title" placeholder="Title">
                         </div>
-                        <div class="p-4">
-                            <textarea id="content" required placeholder="Start writing..." class="glass-input w-full h-40 text-base placeholder-slate-400 focus:outline-none resize-none"></textarea>
+                        <div class="field">
+                            <textarea id="content" required placeholder="Start writing..." rows="8"></textarea>
                         </div>
                     </div>
-                    <div id="raw-view" class="hidden p-4">
-                        <textarea id="raw-output" readonly spellcheck="false" class="glass-input w-full h-52 text-xs font-mono text-gray-700 rounded-lg p-3 focus:outline-none resize-none"></textarea>
+                    <div id="raw-view" class="hidden">
+                        <textarea id="raw-output" readonly spellcheck="false" rows="10"></textarea>
                     </div>
                 </form>
             </div>
 
             <!-- Attachments Section -->
-            <div class="glass-card rounded-2xl mb-6 p-4">
+            <div class="panel">
                  <!-- This is where the image preview will appear -->
-                <div id="attachment-preview-container" class="hidden group relative">
-                    <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-xl w-full max-h-60 object-contain mb-2 border border-white/40">
-                    <button id="clear-attachment-button" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div id="attachment-preview-container" class="hidden">
+                    <img id="attachment-preview" src="#" alt="Attachment preview">
+                    <button id="clear-attachment-button" type="button" aria-label="Clear attachment">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
                 
-                <div id="attachment-buttons" class="flex items-center">
-                    <label for="image-input" class="glass-button w-full text-center py-2 px-4 rounded-xl text-sm font-medium transition cursor-pointer relative">
+                <div id="attachment-buttons">
+                    <label for="image-input">
                         Upload Image
-                        <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                        <input type="file" id="image-input" accept="image/*">
                     </label>
                 </div>
             </div>
 
             <!-- Settings & Password Section -->
-            <div class="glass-card rounded-2xl mb-6 p-4">
-                <div class="mb-4">
-                    <label for="image-path-input" class="text-xs text-gray-500 mb-1 block">Image Path</label>
-                    <input type="text" id="image-path-input" class="glass-input w-full text-sm p-2 focus:outline-none">
+            <div class="panel">
+                <div class="field">
+                    <label for="image-path-input">Image Path</label>
+                    <input type="text" id="image-path-input">
                 </div>
-                <div class="mb-4">
-                    <label for="image-shortcode-input" class="text-xs text-gray-500 mb-1 block">Shortcode Template <span class="text-gray-400">(use IMAGE_NAME)</span></label>
-                    <input type="text" id="image-shortcode-input" class="glass-input w-full text-sm p-2 focus:outline-none">
+                <div class="field">
+                    <label for="image-shortcode-input">Shortcode Template (use IMAGE_NAME)</label>
+                    <input type="text" id="image-shortcode-input">
                 </div>
-                <div>
-                    <label for="password" class="text-xs text-gray-500 mb-1 block">Password</label>
-                    <input type="password" id="password" required class="glass-input w-full text-sm p-2 focus:outline-none">
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
                 </div>
-                <div class="flex items-center mt-2">
-                    <input type="checkbox" id="save-password" class="h-4 w-4 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded">
-                    <label for="save-password" class="ml-2 block text-sm text-gray-700">Save Password</label>
+                <div class="inline-label">
+                    <input type="checkbox" id="save-password">
+                    <label for="save-password">Save Password</label>
                 </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="button-group space-y-3">
-                <button type="submit" id="submit-button" form="post-form" class="glass-primary w-full py-3 px-4 rounded-2xl text-base font-semibold transition disabled:opacity-60">
+            <div class="button-group">
+                <button type="submit" id="submit-button" form="post-form">
                     <span id="button-text">Save Note</span>
                 </button>
-                <button type="button" id="cancel-edit-button" class="glass-secondary hidden w-full py-3 px-4 rounded-2xl text-base font-semibold transition">Cancel Edit</button>
+                <button type="button" id="cancel-edit-button" class="hidden">Cancel Edit</button>
             </div>
-            <div id="message-box" class="mt-4 text-center text-sm"></div>
+            <div id="message-box"></div>
         </main>
 
         <!-- Previous Posts Section -->
-        <section id="posts-section" class="mt-12">
-            <h2 class="text-xl font-semibold text-slate-700 mb-4">Previous Notes</h2>
-            <div class="glass-card rounded-2xl">
-                 <div class="p-4 border-b glass-divider">
-                    <input type="search" id="search-input" placeholder="Search notes..." class="glass-input w-full text-sm p-2 focus:outline-none">
+        <section id="posts-section">
+            <h2>Previous Notes</h2>
+            <div class="panel">
+                 <div class="field">
+                    <input type="search" id="search-input" placeholder="Search notes...">
                 </div>
                 <div>
-                    <ul id="posts-list" class="glass-list divide-y divide-gray-200"></ul>
-                    <div id="posts-loader" class="text-center p-4 text-gray-500 text-sm"></div>
-                    <div id="posts-error" class="text-center p-4 text-red-500 text-sm"></div>
+                    <ul id="posts-list"></ul>
+                    <div id="posts-loader"></div>
+                    <div id="posts-error"></div>
                 </div>
-                <div id="pagination-controls" class="hidden flex justify-between items-center p-4 border-t glass-divider">
-                    <button id="prev-button" class="glass-button text-sm font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
-                    <span id="page-indicator" class="text-sm text-gray-500"></span>
-                    <button id="next-button" class="glass-button text-sm font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                <div id="pagination-controls" class="hidden">
+                    <button id="prev-button">Previous</button>
+                    <span id="page-indicator"></span>
+                    <button id="next-button">Next</button>
                 </div>
             </div>
         </section>
@@ -378,12 +391,12 @@
             const paginatedPosts = filteredPosts.slice(start, end);
 
             if (paginatedPosts.length === 0) {
-                postsList.innerHTML = `<li class="text-center p-4 text-gray-500 text-sm">${allPostsCache.length === 0 ? 'No notes found.' : 'No notes match your search.'}</li>`;
+                postsList.innerHTML = `<li>${allPostsCache.length === 0 ? 'No notes found.' : 'No notes match your search.'}</li>`;
             } else {
                  postsList.innerHTML = paginatedPosts.map(post => `
-                    <li class="p-4 flex justify-between items-center">
-                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="font-medium truncate pr-4" title="${post.name}">${post.name}</a>
-                        <button onclick="handleEditClick('${post.path}')" class="glass-button text-xs font-semibold px-3 py-1 rounded-full transition">Edit</button>
+                    <li>
+                        <a href="${post.url}" target="_blank" rel="noopener noreferrer" title="${post.name}">${post.name}</a>
+                        <button onclick="handleEditClick('${post.path}')">Edit</button>
                     </li>`).join('');
             }
 
@@ -416,7 +429,7 @@
 
         async function handleEditClick(path) {
             messageBox.textContent = 'Fetching note...';
-            messageBox.className = 'mt-4 text-center text-sm text-gray-500';
+            messageBox.className = 'info';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
             const response = await fetch(`/api/get-post-content?path=${encodeURIComponent(path)}`);
@@ -424,7 +437,7 @@
             
             if (!response.ok) {
                 messageBox.textContent = `Error: ${responseText}`;
-                messageBox.className = 'mt-4 text-center text-sm text-red-500';
+                messageBox.className = 'error';
                 return;
             }
 
@@ -443,11 +456,12 @@
                 buttonText.textContent = 'Update Note';
                 cancelEditButton.classList.remove('hidden');
                 messageBox.textContent = 'Editing note. To change image, add a new one.';
+                messageBox.className = 'info';
                 clearAttachment(); // Clear any existing attachments when editing
                 updateRawOutput();
             } catch (error) {
                  messageBox.textContent = `Error parsing post content: ${error.message}`;
-                 messageBox.className = 'mt-4 text-center text-sm text-red-500';
+                 messageBox.className = 'error';
             }
         }
         
@@ -513,7 +527,7 @@
                 }
             } catch (error) {
                 messageBox.textContent = `Error: Could not read image file.`;
-                messageBox.className = 'mt-4 text-center text-sm text-red-500';
+                messageBox.className = 'error';
                 submitButton.disabled = false;
                 buttonText.textContent = editState.sha ? 'Update Note' : 'Save Note';
                 return;
@@ -571,12 +585,12 @@
                 finalResult = JSON.parse(postResultText);
 
                 messageBox.textContent = `Success! ${finalResult.message}`;
-                messageBox.className = 'mt-4 text-center text-sm text-green-600';
+                messageBox.className = 'success';
                 resetFormAndState();
                 await fetchPosts();
             } catch (error) {
                 messageBox.textContent = `Error: ${error.message}`;
-                messageBox.className = 'mt-4 text-center text-sm text-red-500';
+                messageBox.className = 'error';
             } finally {
                 submitButton.disabled = false;
                 buttonText.textContent = editState.sha ? 'Update Note' : 'Save Note';
