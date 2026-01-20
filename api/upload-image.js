@@ -21,7 +21,7 @@ async function handler(req, res) {
 
     const { GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO_NAME, GITHUB_REPO_BRANCH, POST_PASSWORD } = process.env;
 
-    const { password, imageData, imageName, imagePath: userImagePath } = req.body;
+    const { password, imageData, imageName, imagePath: userImagePath, uniqueImageName } = req.body;
 
     if (!password || !POST_PASSWORD || password !== POST_PASSWORD) {
         return res.status(401).json({ error: 'Unauthorized: Invalid password.' });
@@ -35,8 +35,17 @@ async function handler(req, res) {
         const cleanUserPath = userImagePath.replace(/^\/|\/$/g, '');
         const base64Data = imageData.split(';base64,').pop();
         const imageExtension = imageName.split('.').pop();
-        const uniqueImageName = `${Date.now()}-${slugify(imageName.replace(`.${imageExtension}`, ''))}.${imageExtension}`;
-        const githubUploadPath = `${cleanUserPath}/${uniqueImageName}`;
+        let finalImageName = null;
+        if (uniqueImageName && typeof uniqueImageName === 'string') {
+            const trimmedName = uniqueImageName.trim().toLowerCase();
+            if (/^[a-z0-9][a-z0-9-]*\.[a-z0-9]+$/.test(trimmedName)) {
+                finalImageName = trimmedName;
+            }
+        }
+        if (!finalImageName) {
+            finalImageName = `${Date.now()}-${slugify(imageName.replace(`.${imageExtension}`, ''))}.${imageExtension}`;
+        }
+        const githubUploadPath = `${cleanUserPath}/${finalImageName}`;
 
         const imageUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${githubUploadPath}`;
 
@@ -44,7 +53,7 @@ async function handler(req, res) {
             method: 'PUT',
             headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' },
             body: JSON.stringify({
-                message: `feat: add image ${uniqueImageName}`,
+                message: `feat: add image ${finalImageName}`,
                 content: base64Data,
                 branch: GITHUB_REPO_BRANCH,
             }),
@@ -57,7 +66,7 @@ async function handler(req, res) {
 
         return res.status(201).json({ 
             message: 'Image uploaded successfully!',
-            uniqueImageName: uniqueImageName 
+            uniqueImageName: finalImageName 
         });
 
     } catch (error) {

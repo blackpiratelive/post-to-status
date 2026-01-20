@@ -32,11 +32,27 @@
             <!-- Content and Title Form -->
             <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
                 <form id="post-form">
-                    <div class="p-4 border-b border-gray-200">
-                        <input type="text" id="title" placeholder="Title" class="w-full text-xl font-bold placeholder-gray-400 focus:outline-none bg-transparent">
+                    <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <span class="text-xs font-semibold text-gray-500">Mode</span>
+                        <label for="raw-toggle" class="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                            <span>Editor</span>
+                            <input type="checkbox" id="raw-toggle" class="sr-only peer">
+                            <span class="relative w-10 h-5 bg-gray-200 rounded-full transition peer-checked:bg-yellow-400">
+                                <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></span>
+                            </span>
+                            <span>Raw</span>
+                        </label>
                     </div>
-                    <div class="p-4">
-                        <textarea id="content" required placeholder="Start writing..." class="w-full h-40 text-base placeholder-gray-400 focus:outline-none bg-transparent resize-none"></textarea>
+                    <div id="editor-fields">
+                        <div class="p-4 border-b border-gray-200">
+                            <input type="text" id="title" placeholder="Title" class="w-full text-xl font-bold placeholder-gray-400 focus:outline-none bg-transparent">
+                        </div>
+                        <div class="p-4">
+                            <textarea id="content" required placeholder="Start writing..." class="w-full h-40 text-base placeholder-gray-400 focus:outline-none bg-transparent resize-none"></textarea>
+                        </div>
+                    </div>
+                    <div id="raw-view" class="hidden p-4">
+                        <textarea id="raw-output" readonly spellcheck="false" class="w-full h-52 text-xs font-mono text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200 focus:outline-none resize-none"></textarea>
                     </div>
                 </form>
             </div>
@@ -130,6 +146,10 @@
         const postsLoader = document.getElementById('posts-loader');
         const postsError = document.getElementById('posts-error');
         const searchInput = document.getElementById('search-input');
+        const rawToggle = document.getElementById('raw-toggle');
+        const editorFields = document.getElementById('editor-fields');
+        const rawView = document.getElementById('raw-view');
+        const rawOutput = document.getElementById('raw-output');
         
         // Attachment Previews
         const attachmentPreviewContainer = document.getElementById('attachment-preview-container');
@@ -147,9 +167,59 @@
         let allPostsCache = [];
         let editState = { path: null, sha: null };
         let currentAttachment = null; // Can be 'file'
+        let pendingImageName = null;
         let currentPage = 1;
         const postsPerPage = 10;
         let totalPages = 1;
+
+        function slugify(text) {
+            if (!text) return 'untitled';
+            return text
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .substring(0, 50);
+        }
+
+        function getIstIsoString() {
+            const now = new Date();
+            const istOffsetMilliseconds = 330 * 60 * 1000;
+            const istDate = new Date(now.getTime() + istOffsetMilliseconds);
+            const year = istDate.getUTCFullYear();
+            const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(istDate.getUTCDate()).padStart(2, '0');
+            const hours = String(istDate.getUTCHours()).padStart(2, '0');
+            const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
+        }
+
+        function buildUniqueImageName(originalName) {
+            if (!originalName) return null;
+            const parts = originalName.split('.');
+            const extension = parts.length > 1 ? parts.pop().toLowerCase() : 'png';
+            const base = parts.join('.');
+            const safeBase = slugify(base);
+            return `${Date.now()}-${safeBase}.${extension}`;
+        }
+
+        function buildRawPreview() {
+            const title = titleInput.value || '';
+            const postDateISO = editState.path ? new Date().toISOString() : getIstIsoString();
+            let content = contentInput.value || '';
+            if (currentAttachment === 'file' && pendingImageName) {
+                const shortcode = imageShortcodeInput.value.replace('IMAGE_NAME', pendingImageName);
+                content = `${shortcode}\n\n${content}`;
+            }
+            return `---\ntitle: "${title}"\ndate: "${postDateISO}"\n---\n\n${content}`;
+        }
+
+        function updateRawOutput() {
+            rawOutput.value = buildRawPreview();
+        }
 
         // --- Attachment & Preview Functions ---
         function showAttachmentPreview(src) {
@@ -157,6 +227,7 @@
             attachmentPreview.src = src;
             attachmentPreviewContainer.classList.remove('hidden');
             attachmentButtons.classList.add('hidden');
+            updateRawOutput();
         }
 
         function clearAttachment() {
@@ -165,6 +236,8 @@
             attachmentButtons.classList.remove('hidden');
             imageInput.value = ''; // Clear file input
             currentAttachment = null;
+            pendingImageName = null;
+            updateRawOutput();
         }
 
         // --- Main API & Form Functions ---
@@ -246,6 +319,7 @@
                 cancelEditButton.classList.remove('hidden');
                 messageBox.textContent = 'Editing note. To change image, add a new one.';
                 clearAttachment(); // Clear any existing attachments when editing
+                updateRawOutput();
             } catch (error) {
                  messageBox.textContent = `Error parsing post content: ${error.message}`;
                  messageBox.className = 'mt-4 text-center text-sm text-red-500';
@@ -262,6 +336,7 @@
             loadPassword();
             loadImagePath();
             loadShortcode();
+            updateRawOutput();
         }
         
         function savePassword() {
@@ -280,7 +355,10 @@
         function saveImagePath() { localStorage.setItem('post_dashboard_image_path', imagePathInput.value); }
         function loadImagePath() { imagePathInput.value = localStorage.getItem('post_dashboard_image_path') || 'assets/img'; }
         function saveShortcode() { localStorage.setItem('post_dashboard_shortcode', imageShortcodeInput.value); }
-        function loadShortcode() { imageShortcodeInput.value = localStorage.getItem('post_dashboard_shortcode') || '{{< img src="/img/IMAGE_NAME" >}}'; }
+        function loadShortcode() {
+            imageShortcodeInput.value = localStorage.getItem('post_dashboard_shortcode') || '{{< img src="/img/IMAGE_NAME" >}}';
+            updateRawOutput();
+        }
         
         function getBase64(file) {
             return new Promise((resolve, reject) => {
@@ -327,13 +405,19 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            password: passwordInput.value, imageData, imageName, imagePath: imagePathInput.value
+                            password: passwordInput.value,
+                            imageData,
+                            imageName,
+                            imagePath: imagePathInput.value,
+                            uniqueImageName: pendingImageName
                         }),
                     });
                     const imageResultText = await imageResponse.text();
                     if (!imageResponse.ok) throw new Error(`Image upload failed: ${imageResultText}`);
                     const imageResult = JSON.parse(imageResultText);
 
+                    pendingImageName = imageResult.uniqueImageName;
+                    updateRawOutput();
                     newShortcode = imageShortcodeInput.value.replace('IMAGE_NAME', imageResult.uniqueImageName);
                     
                     if (currentSha) {
@@ -377,6 +461,15 @@
         // --- Event Listeners ---
         form.addEventListener('submit', handleFormSubmit);
         cancelEditButton.addEventListener('click', resetFormAndState);
+        rawToggle.addEventListener('change', () => {
+            const showRaw = rawToggle.checked;
+            editorFields.classList.toggle('hidden', showRaw);
+            rawView.classList.toggle('hidden', !showRaw);
+            updateRawOutput();
+        });
+        titleInput.addEventListener('input', updateRawOutput);
+        contentInput.addEventListener('input', updateRawOutput);
+        imageShortcodeInput.addEventListener('input', updateRawOutput);
         searchInput.addEventListener('input', () => {
             currentPage = 1;
             renderPosts();
@@ -387,8 +480,11 @@
         imageInput.addEventListener('change', async (e) => {
             if (e.target.files && e.target.files[0]) {
                 const file = e.target.files[0];
+                pendingImageName = buildUniqueImageName(file.name);
                 const dataUrl = await getBase64(file);
                 showAttachmentPreview(dataUrl);
+            } else {
+                clearAttachment();
             }
         });
 
