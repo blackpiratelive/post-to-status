@@ -6,62 +6,187 @@
     <title>Post Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="/styles/tailwind.css" rel="stylesheet">
     <style>
-        /* Additional custom styles for iOS-like feel */
-        body {
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.62);
+            --glass-border: rgba(255, 255, 255, 0.45);
+            --glass-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+            --glass-highlight: rgba(255, 255, 255, 0.7);
+            --accent: #f59e0b;
+            --accent-soft: rgba(245, 158, 11, 0.18);
+            --text: #0f172a;
+            --muted: #64748b;
+        }
+
+        /* iOS glass treatment */
+        body.glassy-body {
+            font-family: 'Manrope', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overscroll-behavior-y: none; /* Prevents pull-to-refresh */
+            color: var(--text);
+            min-height: 100vh;
+            background:
+                radial-gradient(1200px 600px at 10% -10%, rgba(56, 189, 248, 0.28), transparent 60%),
+                radial-gradient(900px 500px at 90% 0%, rgba(34, 197, 94, 0.18), transparent 60%),
+                linear-gradient(180deg, #f8fafc 0%, #eef2ff 55%, #f1f5f9 100%);
+        }
+        body.glassy-body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(800px 800px at 20% 30%, rgba(255, 255, 255, 0.4), transparent 60%),
+                radial-gradient(700px 700px at 80% 70%, rgba(255, 255, 255, 0.32), transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glass-layer {
+            position: relative;
+            z-index: 1;
         }
         .font-kalam {
             font-family: 'Kalam', cursive;
         }
+        .glass-title {
+            color: #f59e0b;
+            text-shadow: 0 12px 30px rgba(245, 158, 11, 0.25);
+        }
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(18px) saturate(160%);
+        }
+        .glass-bar {
+            background: rgba(255, 255, 255, 0.65);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 12px;
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+            color: var(--text);
+        }
+        .glass-input::placeholder {
+            color: var(--muted);
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: rgba(245, 158, 11, 0.55);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .glass-primary {
+            background: linear-gradient(135deg, #fde047, #f59e0b);
+            color: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 12px 30px rgba(245, 158, 11, 0.28);
+        }
+        .glass-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 36px rgba(245, 158, 11, 0.32);
+        }
+        .glass-secondary {
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #1f2937;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #1f2937;
+            box-shadow: inset 0 1px 0 var(--glass-highlight);
+        }
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.72);
+        }
+        .mode-toggle {
+            gap: 0.5rem;
+        }
+        .toggle-track {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.35);
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
+            transition: background 0.2s ease;
+        }
+        .toggle-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
+            transition: transform 0.2s ease;
+        }
+        .mode-toggle input:checked + .toggle-track {
+            background: rgba(245, 158, 11, 0.65);
+        }
+        .mode-toggle input:checked + .toggle-track .toggle-thumb {
+            transform: translateX(18px);
+        }
+        .glass-divider {
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+        .glass-list li {
+            transition: background 0.2s ease;
+        }
+        .glass-list li:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
         
     </style>
 </head>
-<body class="bg-paper text-gray-800">
-    <div class="container max-w-2xl mx-auto p-4">
+<body class="glassy-body">
+    <div class="container glass-layer max-w-2xl mx-auto p-4">
         <header class="text-center my-4 md:my-8">
-            <h1 class="text-5xl font-kalam text-yellow-500">New Note</h1>
+            <h1 class="text-5xl font-kalam glass-title">New Note</h1>
         </header>
 
         <!-- Main Form Section -->
         <main id="form-section">
             <!-- Content and Title Form -->
-            <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+            <div class="glass-card rounded-2xl mb-6 overflow-hidden">
                 <form id="post-form">
-                    <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                    <div class="glass-bar flex items-center justify-between px-4 py-2">
                         <span class="text-xs font-semibold text-gray-500">Mode</span>
-                        <label for="raw-toggle" class="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                        <label for="raw-toggle" class="mode-toggle flex items-center text-xs text-gray-500 cursor-pointer">
                             <span>Editor</span>
                             <input type="checkbox" id="raw-toggle" class="sr-only peer">
-                            <span class="relative w-10 h-5 bg-gray-200 rounded-full transition peer-checked:bg-yellow-400">
-                                <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></span>
+                            <span class="toggle-track">
+                                <span class="toggle-thumb"></span>
                             </span>
                             <span>Raw</span>
                         </label>
                     </div>
                     <div id="editor-fields">
-                        <div class="p-4 border-b border-gray-200">
-                            <input type="text" id="title" placeholder="Title" class="w-full text-xl font-bold placeholder-gray-400 focus:outline-none bg-transparent">
+                        <div class="p-4 border-b glass-divider">
+                            <input type="text" id="title" placeholder="Title" class="glass-input w-full text-xl font-semibold placeholder-slate-400 focus:outline-none">
                         </div>
                         <div class="p-4">
-                            <textarea id="content" required placeholder="Start writing..." class="w-full h-40 text-base placeholder-gray-400 focus:outline-none bg-transparent resize-none"></textarea>
+                            <textarea id="content" required placeholder="Start writing..." class="glass-input w-full h-40 text-base placeholder-slate-400 focus:outline-none resize-none"></textarea>
                         </div>
                     </div>
                     <div id="raw-view" class="hidden p-4">
-                        <textarea id="raw-output" readonly spellcheck="false" class="w-full h-52 text-xs font-mono text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200 focus:outline-none resize-none"></textarea>
+                        <textarea id="raw-output" readonly spellcheck="false" class="glass-input w-full h-52 text-xs font-mono text-gray-700 rounded-lg p-3 focus:outline-none resize-none"></textarea>
                     </div>
                 </form>
             </div>
 
             <!-- Attachments Section -->
-            <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+            <div class="glass-card rounded-2xl mb-6 p-4">
                  <!-- This is where the image preview will appear -->
                 <div id="attachment-preview-container" class="hidden group relative">
-                    <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-lg w-full max-h-60 object-contain mb-2 border border-gray-200">
+                    <img id="attachment-preview" src="#" alt="Attachment preview" class="rounded-xl w-full max-h-60 object-contain mb-2 border border-white/40">
                     <button id="clear-attachment-button" class="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -70,7 +195,7 @@
                 </div>
                 
                 <div id="attachment-buttons" class="flex items-center">
-                    <label for="image-input" class="w-full text-center py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition cursor-pointer relative">
+                    <label for="image-input" class="glass-button w-full text-center py-2 px-4 rounded-xl text-sm font-medium transition cursor-pointer relative">
                         Upload Image
                         <input type="file" id="image-input" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                     </label>
@@ -78,18 +203,18 @@
             </div>
 
             <!-- Settings & Password Section -->
-            <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
+            <div class="glass-card rounded-2xl mb-6 p-4">
                 <div class="mb-4">
                     <label for="image-path-input" class="text-xs text-gray-500 mb-1 block">Image Path</label>
-                    <input type="text" id="image-path-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="text" id="image-path-input" class="glass-input w-full text-sm p-2 focus:outline-none">
                 </div>
                 <div class="mb-4">
                     <label for="image-shortcode-input" class="text-xs text-gray-500 mb-1 block">Shortcode Template <span class="text-gray-400">(use IMAGE_NAME)</span></label>
-                    <input type="text" id="image-shortcode-input" class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="text" id="image-shortcode-input" class="glass-input w-full text-sm p-2 focus:outline-none">
                 </div>
                 <div>
                     <label for="password" class="text-xs text-gray-500 mb-1 block">Password</label>
-                    <input type="password" id="password" required class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    <input type="password" id="password" required class="glass-input w-full text-sm p-2 focus:outline-none">
                 </div>
                 <div class="flex items-center mt-2">
                     <input type="checkbox" id="save-password" class="h-4 w-4 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded">
@@ -99,30 +224,30 @@
 
             <!-- Action Buttons -->
             <div class="button-group space-y-3">
-                <button type="submit" id="submit-button" form="post-form" class="w-full py-3 px-4 bg-yellow-400 hover:bg-yellow-500 text-white rounded-xl text-base font-semibold shadow-sm transition disabled:bg-gray-300">
+                <button type="submit" id="submit-button" form="post-form" class="glass-primary w-full py-3 px-4 rounded-2xl text-base font-semibold transition disabled:opacity-60">
                     <span id="button-text">Save Note</span>
                 </button>
-                <button type="button" id="cancel-edit-button" class="hidden w-full py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-base font-semibold transition">Cancel Edit</button>
+                <button type="button" id="cancel-edit-button" class="glass-secondary hidden w-full py-3 px-4 rounded-2xl text-base font-semibold transition">Cancel Edit</button>
             </div>
             <div id="message-box" class="mt-4 text-center text-sm"></div>
         </main>
 
         <!-- Previous Posts Section -->
         <section id="posts-section" class="mt-12">
-            <h2 class="text-xl font-bold mb-4">Previous Notes</h2>
-            <div class="bg-white rounded-xl shadow-sm">
-                 <div class="p-4 border-b border-gray-200">
-                    <input type="search" id="search-input" placeholder="Search notes..." class="w-full text-sm bg-gray-100 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <h2 class="text-xl font-semibold text-slate-700 mb-4">Previous Notes</h2>
+            <div class="glass-card rounded-2xl">
+                 <div class="p-4 border-b glass-divider">
+                    <input type="search" id="search-input" placeholder="Search notes..." class="glass-input w-full text-sm p-2 focus:outline-none">
                 </div>
                 <div>
-                    <ul id="posts-list" class="divide-y divide-gray-200"></ul>
+                    <ul id="posts-list" class="glass-list divide-y divide-gray-200"></ul>
                     <div id="posts-loader" class="text-center p-4 text-gray-500 text-sm"></div>
                     <div id="posts-error" class="text-center p-4 text-red-500 text-sm"></div>
                 </div>
-                <div id="pagination-controls" class="hidden flex justify-between items-center p-4 border-t border-gray-200">
-                    <button id="prev-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                <div id="pagination-controls" class="hidden flex justify-between items-center p-4 border-t glass-divider">
+                    <button id="prev-button" class="glass-button text-sm font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
                     <span id="page-indicator" class="text-sm text-gray-500"></span>
-                    <button id="next-button" class="text-sm font-semibold bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                    <button id="next-button" class="glass-button text-sm font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
                 </div>
             </div>
         </section>
@@ -258,7 +383,7 @@
                  postsList.innerHTML = paginatedPosts.map(post => `
                     <li class="p-4 flex justify-between items-center">
                         <a href="${post.url}" target="_blank" rel="noopener noreferrer" class="font-medium truncate pr-4" title="${post.name}">${post.name}</a>
-                        <button onclick="handleEditClick('${post.path}')" class="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">Edit</button>
+                        <button onclick="handleEditClick('${post.path}')" class="glass-button text-xs font-semibold px-3 py-1 rounded-full transition">Edit</button>
                     </li>`).join('');
             }
 
