@@ -331,6 +331,7 @@
         let editState = { path: null, sha: null };
         let currentAttachment = null; // Can be 'file'
         let pendingImageName = null;
+        let lastModifiedIso = new Date().toISOString();
         let currentPage = 1;
         const postsPerPage = 10;
         let totalPages = 1;
@@ -434,10 +435,11 @@
                 content = `${shortcode}\n\n${content}`;
             }
             const tagsLine = formatTagsForFrontmatter(getSelectedTags());
-            return `---\ntitle: "${title}"\n${tagsLine}date: "${postDateISO}"\n---\n\n${content}`;
+            return `---\ntitle: "${title}"\n${tagsLine}date: "${postDateISO}"\nlastmod: "${lastModifiedIso}"\n---\n\n${content}`;
         }
 
         function updateRawOutput() {
+            lastModifiedIso = new Date().toISOString();
             rawOutput.value = buildRawPreview();
         }
 
@@ -663,6 +665,7 @@
                         title: titleInput.value,
                         content: finalContent,
                         tags: tags,
+                        lastmod: lastModifiedIso,
                         password: passwordInput.value,
                         client_iso_date: new Date().toISOString(),
                         sha: currentSha,
