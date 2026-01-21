@@ -158,6 +158,11 @@
             font-size: 12px;
             color: #444;
         }
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
         .hidden {
             display: none;
         }
@@ -193,6 +198,24 @@
                         <textarea id="raw-output" readonly spellcheck="false" rows="10"></textarea>
                     </div>
                 </form>
+            </div>
+
+            <!-- Tags Section -->
+            <div class="panel">
+                <div class="field">
+                    <label>Tags</label>
+                    <div class="tag-list">
+                        <label class="inline-label"><input type="checkbox" name="tags" value="website">website</label>
+                        <label class="inline-label"><input type="checkbox" name="tags" value="quotes">quotes</label>
+                        <label class="inline-label"><input type="checkbox" name="tags" value="articles">articles</label>
+                        <label class="inline-label"><input type="checkbox" name="tags" value="bookmarks">bookmarks</label>
+                        <label class="inline-label"><input type="checkbox" name="tags" value="study">study</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="custom-tags">Custom tags (comma-separated)</label>
+                    <input type="text" id="custom-tags" placeholder="example, another-tag">
+                </div>
             </div>
 
             <!-- Attachments Section -->
@@ -288,6 +311,8 @@
         const editorFields = document.getElementById('editor-fields');
         const rawView = document.getElementById('raw-view');
         const rawOutput = document.getElementById('raw-output');
+        const tagCheckboxes = document.querySelectorAll('input[name="tags"]');
+        const customTagsInput = document.getElementById('custom-tags');
         
         // Attachment Previews
         const attachmentPreviewContainer = document.getElementById('attachment-preview-container');
@@ -344,6 +369,62 @@
             return `${Date.now()}-${safeBase}.${extension}`;
         }
 
+        function formatTagsForFrontmatter(tags) {
+            if (!tags.length) return '';
+            const quotedTags = tags.map(tag => JSON.stringify(tag));
+            return `tags: [${quotedTags.join(', ')}]\n`;
+        }
+
+        function getSelectedTags() {
+            const checked = Array.from(tagCheckboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+            const custom = customTagsInput.value
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(Boolean);
+            const merged = [...checked, ...custom];
+            const seen = new Set();
+            return merged.filter(tag => {
+                const key = tag.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function setSelectedTags(tags) {
+            const normalized = tags.map(tag => tag.trim()).filter(Boolean);
+            const normalizedSet = new Set(normalized.map(tag => tag.toLowerCase()));
+            const presetSet = new Set(Array.from(tagCheckboxes).map(checkbox => checkbox.value.toLowerCase()));
+            tagCheckboxes.forEach(checkbox => {
+                checkbox.checked = normalizedSet.has(checkbox.value.toLowerCase());
+            });
+            const custom = normalized.filter(tag => !presetSet.has(tag.toLowerCase()));
+            customTagsInput.value = custom.join(', ');
+        }
+
+        function parseTagsFromFrontmatter(frontmatter) {
+            const lines = frontmatter.split('\n').map(line => line.trim());
+            for (let i = 0; i < lines.length; i++) {
+                if (!lines[i].startsWith('tags:')) continue;
+                const rest = lines[i].slice(5).trim();
+                if (rest.startsWith('[')) {
+                    const inner = rest.replace(/^\[/, '').replace(/\]$/, '');
+                    if (!inner.trim()) return [];
+                    return inner.split(',').map(tag => tag.trim()).map(tag => tag.replace(/^["']|["']$/g, '')).filter(Boolean);
+                }
+                const tags = [];
+                for (let j = i + 1; j < lines.length; j++) {
+                    if (!lines[j].startsWith('-')) break;
+                    const tag = lines[j].replace(/^-/, '').trim().replace(/^["']|["']$/g, '');
+                    if (tag) tags.push(tag);
+                }
+                return tags;
+            }
+            return [];
+        }
+
         function buildRawPreview() {
             const title = titleInput.value || '';
             const postDateISO = editState.path ? new Date().toISOString() : getIstIsoString();
@@ -352,7 +433,8 @@
                 const shortcode = imageShortcodeInput.value.replace('IMAGE_NAME', pendingImageName);
                 content = `${shortcode}\n\n${content}`;
             }
-            return `---\ntitle: "${title}"\ndate: "${postDateISO}"\n---\n\n${content}`;
+            const tagsLine = formatTagsForFrontmatter(getSelectedTags());
+            return `---\ntitle: "${title}"\n${tagsLine}date: "${postDateISO}"\n---\n\n${content}`;
         }
 
         function updateRawOutput() {
@@ -449,6 +531,7 @@
                 const titleMatch = frontmatter.match(/title:\s*"(.*?)"/);
 
                 titleInput.value = titleMatch ? titleMatch[1] : '';
+                setSelectedTags(parseTagsFromFrontmatter(frontmatter));
                 contentInput.value = mainContent;
                 editState = { path: path, sha: result.sha };
                 
@@ -472,6 +555,7 @@
             buttonText.textContent = 'Save Note';
             cancelEditButton.classList.add('hidden');
             clearAttachment();
+            setSelectedTags([]);
             loadPassword();
             loadImagePath();
             loadShortcode();
@@ -570,13 +654,19 @@
 
                 buttonText.textContent = currentSha ? 'Updating note...' : 'Saving note...';
                 const finalContent = newShortcode ? `${newShortcode}\n\n${contentInput.value}` : contentInput.value;
+                const tags = getSelectedTags();
 
                 const postResponse = await fetch('/api/create-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        title: titleInput.value, content: finalContent, password: passwordInput.value,
-                        client_iso_date: new Date().toISOString(), sha: currentSha, path: editState.path,
+                        title: titleInput.value,
+                        content: finalContent,
+                        tags: tags,
+                        password: passwordInput.value,
+                        client_iso_date: new Date().toISOString(),
+                        sha: currentSha,
+                        path: editState.path,
                     }),
                 });
                 
@@ -609,6 +699,8 @@
         titleInput.addEventListener('input', updateRawOutput);
         contentInput.addEventListener('input', updateRawOutput);
         imageShortcodeInput.addEventListener('input', updateRawOutput);
+        tagCheckboxes.forEach(checkbox => checkbox.addEventListener('change', updateRawOutput));
+        customTagsInput.addEventListener('input', updateRawOutput);
         searchInput.addEventListener('input', () => {
             currentPage = 1;
             renderPosts();

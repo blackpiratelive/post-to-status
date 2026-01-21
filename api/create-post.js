@@ -33,7 +33,7 @@ async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    const { title, content, password, client_iso_date, sha, path } = req.body;
+    const { title, content, password, client_iso_date, sha, path, tags: rawTags } = req.body;
 
     if (!content || !password) {
         return res.status(400).json({ error: 'Content and password are required.' });
@@ -78,7 +78,18 @@ async function handler(req, res) {
             postDateISO = new Date(client_iso_date).toISOString();
         }
 
-        const postContent = `---\ntitle: "${title || ''}"\ndate: "${postDateISO}"\n---\n\n${content}`;
+        const tags = Array.isArray(rawTags)
+            ? rawTags
+            : typeof rawTags === 'string'
+                ? rawTags.split(',')
+                : [];
+        const cleanTags = tags
+            .map(tag => String(tag).trim())
+            .filter(Boolean);
+        const tagsLine = cleanTags.length
+            ? `tags: [${cleanTags.map(tag => JSON.stringify(tag)).join(', ')}]\n`
+            : '';
+        const postContent = `---\ntitle: "${title || ''}"\n${tagsLine}date: "${postDateISO}"\n---\n\n${content}`;
         const encodedContent = Buffer.from(postContent).toString('base64');
         const postUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${filePath}`;
 
@@ -123,4 +134,3 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
-
